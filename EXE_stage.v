@@ -25,11 +25,20 @@ reg         es_valid      ;
 wire        es_ready_go   ;
 
 reg  [`DS_TO_ES_BUS_WD -1:0] ds_to_es_bus_r;
+wire        es_inst_mult  ,
+wire        es_inst_multu ,
+wire        es_inst_div   ,
+wire        es_inst_divu  ,
+wire        es_inst_mfhi  ,
+wire        es_inst_mflo  ,
+wire        es_inst_mthi  ,
+wire        es_inst_mtlo  ,
 wire [11:0] es_alu_op     ;
 wire        es_load_op    ;
-wire        es_src1_is_sa ;  
+wire        es_src1_is_sa ;
 wire        es_src1_is_pc ;
-wire        es_src2_is_imm; 
+wire        es_src2_is_imm;
+wire        es_src2_is_uimm;
 wire        es_src2_is_8  ;
 wire        es_gr_we      ;
 wire        es_mem_we     ;
@@ -38,19 +47,29 @@ wire [15:0] es_imm        ;
 wire [31:0] es_rs_value   ;
 wire [31:0] es_rt_value   ;
 wire [31:0] es_pc         ;
-assign {es_alu_op      ,  //135:124
-        es_load_op     ,  //123:123
-        es_src1_is_sa  ,  //122:122
-        es_src1_is_pc  ,  //121:121
-        es_src2_is_imm ,  //120:120
-        es_src2_is_8   ,  //119:119
-        es_gr_we       ,  //118:118
-        es_mem_we      ,  //117:117
-        es_dest        ,  //116:112
-        es_imm         ,  //111:96
-        es_rs_value    ,  //95 :64
-        es_rt_value    ,  //63 :32
-        es_pc             //31 :0
+assign {
+        es_inst_mult   ,  // 144:144
+        es_inst_multu  ,  // 143:143
+        es_inst_div    ,  // 142:142
+        es_inst_divu   ,  // 141:141
+        es_inst_mfhi   ,  // 140:140
+        es_inst_mflo   ,  // 139:139
+        es_inst_mthi   ,  // 138:138
+        es_inst_mtlo   ,  // 137:137
+        es_alu_op      ,  // 136:125
+        es_load_op     ,  // 124:124
+        es_src1_is_sa  ,  // 123:123
+        es_src1_is_pc  ,  // 122:122
+        es_src2_is_imm ,  // 121:121
+        es_src2_is_uimm,  // 120:120
+        es_src2_is_8   ,  // 119:119
+        es_gr_we       ,  // 118:118
+        es_mem_we      ,  // 117:117
+        es_dest        ,  // 116:112
+        es_imm         ,  // 111:96
+        es_rs_value    ,  // 95 :64
+        es_rt_value    ,  // 63 :32
+        es_pc             // 31 :0
        } = ds_to_es_bus_r;
 
 wire [31:0] es_alu_src1   ;
@@ -87,7 +106,8 @@ end
 assign es_alu_src1 = es_src1_is_sa  ? {27'b0, es_imm[10:6]} : 
                      es_src1_is_pc  ? es_pc[31:0] :
                                       es_rs_value;
-assign es_alu_src2 = es_src2_is_imm ? {{16{es_imm[15]}}, es_imm[15:0]} : 
+assign es_alu_src2 = es_src2_is_imm ? {{16{es_imm[15]}}, es_imm[15:0]} :
+                     es_src2_is_uimm? {16'd0,            es_imm[15:0]} :
                      es_src2_is_8   ? 32'd8 :
                                       es_rt_value;
 
@@ -99,7 +119,7 @@ alu u_alu(
     );
 
 assign data_sram_en    = 1'b1;
-assign data_sram_wen   = es_mem_we&&es_valid ? 4'hf : 4'h0;
+assign data_sram_wen   = (es_mem_we && es_valid) ? 4'hf : 4'h0;
 assign data_sram_addr  = es_alu_result;
 assign data_sram_wdata = es_rt_value;
 

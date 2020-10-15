@@ -37,16 +37,11 @@ wire [`ES_TO_MS_BUS_WD -1:0] es_to_ms_bus;
 wire [`MS_TO_WS_BUS_WD -1:0] ms_to_ws_bus;
 wire [`WS_TO_RF_BUS_WD -1:0] ws_to_rf_bus;
 wire [`BR_BUS_WD       -1:0] br_bus;
+
+// forward part
 wire [`ES_FWD_BUS_WD   -1:0] es_fwd_bus;
 wire [`MS_FWD_BUS_WD   -1:0] ms_fwd_bus;
-wire [`WS_FWD_BUS_WD   -1:0] ws_fwd_bus;
-wire [`FWD_BUS_WD      -1:0] fwd_bus;
 
-assign fwd_bus = {
-                 ws_fwd_bus,
-                 ms_fwd_bus,
-                 es_fwd_bus
-                 };
 // IF stage
 if_stage if_stage(
     .clk            (clk            ),
@@ -83,7 +78,8 @@ id_stage id_stage(
     //to rf: for write back
     .ws_to_rf_bus   (ws_to_rf_bus   ),
     //forward_bus
-    .fwd_bus        (fwd_bus        )
+    .es_fwd_bus     (es_fwd_bus     ),
+    .ms_fwd_bus     (ms_fwd_bus     )
 );
 // EXE stage
 exe_stage exe_stage(
@@ -133,15 +129,13 @@ wb_stage wb_stage(
     //from ms
     .ms_to_ws_valid (ms_to_ws_valid ),
     .ms_to_ws_bus   (ms_to_ws_bus   ),
-    //to rf: for write back
+    //to rf: for write back and forward bus (to ds)
     .ws_to_rf_bus   (ws_to_rf_bus   ),
     //trace debug interface
     .debug_wb_pc      (debug_wb_pc      ),
     .debug_wb_rf_wen  (debug_wb_rf_wen  ),
     .debug_wb_rf_wnum (debug_wb_rf_wnum ),
-    .debug_wb_rf_wdata(debug_wb_rf_wdata),
-    //forward_bus
-    .ws_fwd_bus       (ws_fwd_bus       )
+    .debug_wb_rf_wdata(debug_wb_rf_wdata)
 );
 
 endmodule

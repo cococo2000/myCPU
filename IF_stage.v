@@ -39,7 +39,7 @@ assign fs_to_ds_bus = {fs_inst ,
 
 // pre-IF stage
 assign pf_ready_go  = ~br_stall;
-assign to_fs_valid  = ~reset & pf_ready_go;
+assign to_fs_valid  = ~reset && pf_ready_go;
 assign seq_pc       = fs_pc + 3'h4;
 assign nextpc       = br_taken ? br_target : seq_pc; 
 
@@ -63,7 +63,7 @@ always @(posedge clk) begin
     end
 end
 
-assign inst_sram_en    = to_fs_valid && fs_allowin;
+assign inst_sram_en    = to_fs_valid && fs_allowin && ~br_stall;
 assign inst_sram_wen   = 4'h0;
 assign inst_sram_addr  = nextpc;
 assign inst_sram_wdata = 32'b0;

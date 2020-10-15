@@ -17,7 +17,8 @@ module id_stage(
     //to rf: for write back
     input  [`WS_TO_RF_BUS_WD -1:0] ws_to_rf_bus  ,
     //foward_recv
-    input  [`FWD_BUS_WD      -1:0] fwd_bus
+    input [`ES_FWD_BUS_WD    -1:0] es_fwd_bus    ,
+    input [`MS_FWD_BUS_WD    -1:0] ms_fwd_bus
 );
 
 reg         ds_valid   ;
@@ -27,34 +28,13 @@ wire [31                 :0] fs_pc;
 reg  [`FS_TO_DS_BUS_WD -1:0] fs_to_ds_bus_r;
 assign fs_pc = fs_to_ds_bus[31:0];
 
-wire [31:0] es_res;
-wire [4 :0] es_dest;
-wire [31:0] ms_res;
-wire [4 :0] ms_dest;
-wire [31:0] ws_res;
-wire [4 :0] ws_dest;
-
-assign {ws_res,    //110:79
-        ws_dest,    //78:74
-        ms_res,     //73:42 
-        ms_dest,    //41:37
-        es_res,     //36:5
-        es_dest     //4:0
-       } = fwd_bus;
-
 wire [31:0] ds_inst;
 wire [31:0] ds_pc  ;
 assign {ds_inst,
         ds_pc  } = fs_to_ds_bus_r;
 
-wire        rf_we   ;
-wire [ 4:0] rf_waddr;
-wire [31:0] rf_wdata;
-assign {rf_we   ,  //37:37
-        rf_waddr,  //36:32
-        rf_wdata   //31:0
-       } = ws_to_rf_bus;
-
+// Branch and Jump bus: br_bus
+wire        rs_eq_rt;
 wire        br_stall;
 wire        br_taken;
 wire [31:0] br_target;
@@ -107,17 +87,47 @@ wire        inst_bne;
 wire        inst_jal;
 wire        inst_jr;
 
+// write reg dest
 wire        dst_is_r31;  
 wire        dst_is_rt;   
 
+// regfiles
+wire        rf_we   ;
+wire [ 4:0] rf_waddr;
+wire [31:0] rf_wdata;
 wire [ 4:0] rf_raddr1;
 wire [31:0] rf_rdata1;
 wire [ 4:0] rf_raddr2;
 wire [31:0] rf_rdata2;
 
-wire        rs_eq_rt;
-
-assign br_bus       = {br_stall,br_taken,br_target};
+// block & forward parts
+wire        blocked;
+// es forward bus
+wire        es_load;
+wire        es_block_valid;
+wire [31:0] es_res;
+wire [ 4:0] es_dest;
+// ms forward bus
+wire        ms_block_valid;
+wire [31:0] ms_res;
+wire [ 4:0] ms_dest;
+// ws_to_rf_bus
+wire        rs_valid;
+wire        rt_valid;
+// judge regfile waddr eq?
+wire        rs_eq_es_dest ;
+wire        rs_eq_ms_dest ;
+wire        rs_eq_rf_waddr;
+wire        rt_eq_es_dest ;
+wire        rt_eq_ms_dest ;
+wire        rt_eq_rf_waddr;
+// forward valid
+wire        rs_es_fwd_valid;
+wire        rs_ms_fwd_valid;
+wire        rs_ws_fwd_valid;
+wire        rt_es_fwd_valid;
+wire        rt_ms_fwd_valid;
+wire        rt_ws_fwd_valid;
 
 assign ds_to_es_bus = {alu_op      ,  //135:124
                        load_op     ,  //123:123
@@ -133,49 +143,6 @@ assign ds_to_es_bus = {alu_op      ,  //135:124
                        rt_value    ,  //63 :32
                        ds_pc          //31 :0
                       };
-
-wire rs_eq;
-wire rt_eq;
-wire blocked; //test block
-wire rs_check;
-wire rt_ckeck;
-
-assign rs_eq = (rs == es_dest);
-
-assign rt_eq = (rt == es_dest);
-
-assign rs_check = inst_addu | inst_subu | inst_slt  |
-                  inst_sltu | inst_and  | inst_or   |
-                  inst_xor  | inst_nor  | inst_addiu|
-                  inst_lw   | inst_sw   | inst_beq  |
-                  inst_bne  | inst_jr;
-
-assign rt_check = inst_addu | inst_subu | inst_slt  |
-                  inst_sltu | inst_and  | inst_or   |
-                  inst_xor  | inst_nor  | inst_sll  |
-                  inst_srl  | inst_sra  | inst_sw   |
-                  inst_beq  | inst_bne;
-
-reg last_op_load;
-always @(posedge clk ) begin
-    last_op_load <= load_op;
-end
-
-wire rs_es_fwd;
-wire rs_ms_fwd;
-wire rs_ws_fwd;
-assign rs_es_fwd = rs && rs_check && (rf_raddr1 == es_dest) && !last_op_load;
-assign rs_ms_fwd = rs && rs_check && (rf_raddr1 == ms_dest);
-assign rs_ws_fwd = rs && rs_check && (rf_raddr1 == ws_dest);
-
-wire rt_es_fwd;
-wire rt_ms_fwd;
-wire rt_ws_fwd;
-assign rt_es_fwd = rt && rt_check && (rf_raddr2 == es_dest) && !last_op_load;
-assign rt_ms_fwd = rt && rt_check && (rf_raddr2 == ms_dest);
-assign rt_ws_fwd = rt && rt_check && (rf_raddr2 == ws_dest);
-
-assign blocked = ((rs_check && rs_eq && rs) || (rt_check && rt_eq && rt)) && last_op_load;
 
 assign ds_ready_go    = !blocked;
 assign ds_allowin     = !ds_valid || ds_ready_go && es_allowin;
@@ -256,9 +223,9 @@ assign mem_we       = inst_sw;
 
 assign dest         = dst_is_r31 ? 5'd31 :
                       dst_is_rt  ? rt    :
-                      gr_we      ? rd    :// If reg not written, the dest is null. 
-                                   5'd0;
+                                   rd;
 
+// block & forward parts
 assign rf_raddr1 = rs;
 assign rf_raddr2 = rt;
 regfile u_regfile(
@@ -272,21 +239,64 @@ regfile u_regfile(
     .wdata  (rf_wdata )
     );
 
-assign rs_value = rs_es_fwd ? es_res :
-                  rs_ms_fwd ? ms_res :
-                  rs_ws_fwd ? ws_res :
+// es forward bus
+assign {es_load,        // 38:38
+        es_block_valid, // 37:37
+        es_dest,        // 36:32
+        es_res          // 31:0
+       } = es_fwd_bus;
+// ms forward bus
+assign {ms_block_valid, // 37:37
+        ms_dest,        // 36:32
+        ms_res          // 31:0
+       } = ms_fwd_bus;
+// ws_to_rf_bus
+assign {rf_we   ,       // 37:37
+        rf_waddr,       // 36:32
+        rf_wdata        // 31:0
+       } = ws_to_rf_bus;
+
+assign rs_valid = inst_addu || inst_subu || inst_slt  ||
+                  inst_sltu || inst_and  || inst_or   ||
+                  inst_xor  || inst_nor  || inst_addiu||
+                  inst_lw   || inst_sw   || inst_beq  ||
+                  inst_bne  || inst_jr;
+
+assign rt_valid = inst_addu || inst_subu || inst_slt ||
+                  inst_sltu || inst_and  || inst_or  ||
+                  inst_xor  || inst_nor  || inst_sll ||
+                  inst_srl  || inst_sra  || inst_sw  ||
+                  inst_beq  || inst_bne;
+
+assign rs_eq_es_dest = es_block_valid && (rs == es_dest ) && rs_valid && rs && es_dest;
+assign rs_eq_ms_dest = ms_block_valid && (rs == ms_dest ) && rs_valid && rs && ms_dest;
+assign rs_eq_rf_waddr= rf_we          && (rs == rf_waddr) && rs_valid && rs && rf_waddr;
+assign rt_eq_es_dest = es_block_valid && (rt == es_dest ) && rt_valid && rt && es_dest;
+assign rt_eq_ms_dest = ms_block_valid && (rt == ms_dest ) && rt_valid && rt && ms_dest;
+assign rt_eq_rf_waddr= rf_we          && (rt == rf_waddr) && rt_valid && rt && rf_waddr;
+
+assign rs_es_fwd_valid = rs_eq_es_dest && !es_load;
+assign rs_ms_fwd_valid = rs_eq_ms_dest;
+assign rs_ws_fwd_valid = rs_eq_rf_waddr;
+assign rt_es_fwd_valid = rt_eq_es_dest && !es_load;
+assign rt_ms_fwd_valid = rt_eq_ms_dest;
+assign rt_ws_fwd_valid = rt_eq_rf_waddr;
+
+assign blocked = es_load && (rs_eq_es_dest || rt_eq_es_dest);
+
+assign rs_value = rs_es_fwd_valid ? es_res   :
+                  rs_ms_fwd_valid ? ms_res   :
+                  rs_ws_fwd_valid ? rf_wdata :
                   rf_rdata1;
 
-assign rt_value = rt_es_fwd ? es_res :
-                  rt_ms_fwd ? ms_res :
-                  rt_ws_fwd ? ws_res :
+assign rt_value = rt_es_fwd_valid ? es_res   :
+                  rt_ms_fwd_valid ? ms_res   :
+                  rt_ws_fwd_valid ? rf_wdata :
                   rf_rdata2;
 
+// Branch and Jump parts
 assign rs_eq_rt = (rs_value == rt_value);
-assign br_stall = (   inst_beq && blocked
-                   || inst_bne && blocked
-                   || inst_jr  && blocked
-                  )&& ds_valid;
+assign br_stall = blocked && ds_valid && (inst_beq || inst_bne || inst_jr);
 assign br_taken = (   inst_beq  &&  rs_eq_rt
                    || inst_bne  && !rs_eq_rt
                    || inst_jal
@@ -295,5 +305,6 @@ assign br_taken = (   inst_beq  &&  rs_eq_rt
 assign br_target = (inst_beq || inst_bne) ? (fs_pc + {{14{imm[15]}}, imm[15:0], 2'b0}) :
                    (inst_jr)              ? rs_value :
                   /*inst_jal*/              {fs_pc[31:28], jidx[25:0], 2'b0};
+assign br_bus    = {br_stall, br_taken, br_target};
 
 endmodule

@@ -67,7 +67,6 @@ assign es_to_ms_bus = {es_res_from_mem,  //70:70
                        es_pc             //31:0
                       };
 
-assign es_fwd_bus = {es_alu_result, es_dest & {5{es_valid}}}; // forward
 
 assign es_ready_go    = 1'b1;
 assign es_allowin     = !es_valid || es_ready_go && ms_allowin;
@@ -103,5 +102,16 @@ assign data_sram_en    = 1'b1;
 assign data_sram_wen   = es_mem_we&&es_valid ? 4'hf : 4'h0;
 assign data_sram_addr  = es_alu_result;
 assign data_sram_wdata = es_rt_value;
+
+// es forward bus
+wire es_block;
+wire es_block_valid;
+assign es_block = es_gr_we;
+assign es_block_valid  = es_block && es_valid;
+assign es_fwd_bus = {es_load_op && es_valid,   // 38:38
+                     es_block_valid        ,   // 37:37
+                     es_dest               ,   // 36:32
+                     es_alu_result             // 31:0
+                     };// es forward bus
 
 endmodule

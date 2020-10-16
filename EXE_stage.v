@@ -25,14 +25,14 @@ reg         es_valid      ;
 wire        es_ready_go   ;
 
 reg  [`DS_TO_ES_BUS_WD -1:0] ds_to_es_bus_r;
-wire        es_inst_mult  ,
-wire        es_inst_multu ,
-wire        es_inst_div   ,
-wire        es_inst_divu  ,
-wire        es_inst_mfhi  ,
-wire        es_inst_mflo  ,
-wire        es_inst_mthi  ,
-wire        es_inst_mtlo  ,
+wire        es_mult       ;
+wire        es_multu      ;
+wire        es_div        ;
+wire        es_divu       ;
+wire        es_mfhi       ;
+wire        es_mflo       ;
+wire        es_mthi       ;
+wire        es_mtlo       ;
 wire [11:0] es_alu_op     ;
 wire        es_load_op    ;
 wire        es_src1_is_sa ;
@@ -48,14 +48,14 @@ wire [31:0] es_rs_value   ;
 wire [31:0] es_rt_value   ;
 wire [31:0] es_pc         ;
 assign {
-        es_inst_mult   ,  // 144:144
-        es_inst_multu  ,  // 143:143
-        es_inst_div    ,  // 142:142
-        es_inst_divu   ,  // 141:141
-        es_inst_mfhi   ,  // 140:140
-        es_inst_mflo   ,  // 139:139
-        es_inst_mthi   ,  // 138:138
-        es_inst_mtlo   ,  // 137:137
+        es_mult        ,  // 144:144
+        es_multu       ,  // 143:143
+        es_div         ,  // 142:142
+        es_divu        ,  // 141:141
+        es_mfhi        ,  // 140:140
+        es_mflo        ,  // 139:139
+        es_mthi        ,  // 138:138
+        es_mtlo        ,  // 137:137
         es_alu_op      ,  // 136:125
         es_load_op     ,  // 124:124
         es_src1_is_sa  ,  // 123:123
@@ -75,19 +75,42 @@ assign {
 wire [31:0] es_alu_src1   ;
 wire [31:0] es_alu_src2   ;
 wire [31:0] es_alu_result ;
+wire [31:0] es_res        ;
 
 wire        es_res_from_mem;
 
+// mul & div parts
+reg  [31:0] hi;
+reg  [31:0] lo;
+wire [63:0] mult_res;
+wire [63:0] multu_res;
+wire [63:0] div_res;
+wire [63:0] divu_res;
+// div
+reg  div_valid;
+wire div_ready;
+wire div_divisor_ready;
+wire div_dividend_ready;
+wire div_done;
+// divu
+reg  divu_valid;
+wire divu_ready;
+wire divu_divisor_ready;
+wire divu_dividend_ready;
+wire divu_done;
+
 assign es_res_from_mem = es_load_op;
+assign es_res = es_mfhi ? hi :
+                es_mflo ? lo :
+                          es_alu_result;
 assign es_to_ms_bus = {es_res_from_mem,  //70:70
                        es_gr_we       ,  //69:69
                        es_dest        ,  //68:64
-                       es_alu_result  ,  //63:32
+                       es_res         ,  //63:32
                        es_pc             //31:0
                       };
 
-
-assign es_ready_go    = 1'b1;
+assign es_ready_go    = !(es_div || es_divu) || (es_div && div_done) || (es_divu && divu_done);
 assign es_allowin     = !es_valid || es_ready_go && ms_allowin;
 assign es_to_ms_valid =  es_valid && es_ready_go;
 always @(posedge clk) begin
@@ -131,7 +154,89 @@ assign es_block_valid  = es_block && es_valid;
 assign es_fwd_bus = {es_load_op && es_valid,   // 38:38
                      es_block_valid        ,   // 37:37
                      es_dest               ,   // 36:32
-                     es_alu_result             // 31:0
+                     es_res                    // 31:0
                      };// es forward bus
 
+// mul & div parts
+// mul
+assign mult_res  = $signed(es_alu_src1) * $signed(es_alu_src2);
+assign multu_res = es_alu_src1 * es_alu_src2;
+// div 
+assign div_ready = div_divisor_ready & div_dividend_ready;
+assign divu_ready = divu_divisor_ready & divu_dividend_ready;
+// div_ready
+always @(posedge clk)
+begin
+    if(reset) begin
+        div_valid <= 1'b0;
+    end else if(div_ready && div_valid) begin
+        div_valid <= 1'b0;
+    end else if (ds_to_es_valid && es_allowin) begin
+        div_valid <= ds_to_es_bus[142:142];
+    end
+end
+// divu_ready
+always @(posedge clk)
+begin
+    if(reset) begin
+        divu_valid <= 1'b0;
+    end else if(divu_ready && divu_valid) begin
+        divu_valid <= 1'b0;
+    end else if(ds_to_es_valid && es_allowin) begin
+        divu_valid <= ds_to_es_bus[141:141];
+    end
+end
+
+mydiv u_mydiv(
+      .aclk                   (clk               ),
+      .s_axis_divisor_tvalid  (div_valid         ),
+      .s_axis_divisor_tready  (div_divisor_ready ),
+      .s_axis_divisor_tdata   (es_alu_src2       ),
+      .s_axis_dividend_tvalid (div_valid         ),
+      .s_axis_dividend_tready (div_dividend_ready),
+      .s_axis_dividend_tdata  (es_alu_src1       ),
+      .m_axis_dout_tvalid     (div_done          ),
+      .m_axis_dout_tdata      (div_res           )
+    );
+    
+mydivu u_mydivu(
+      .aclk                   (clk                ),
+      .s_axis_divisor_tvalid  (divu_valid         ),
+      .s_axis_divisor_tready  (divu_divisor_ready ),
+      .s_axis_divisor_tdata   (es_alu_src2        ),
+      .s_axis_dividend_tvalid (divu_valid         ),
+      .s_axis_dividend_tready (divu_dividend_ready),
+      .s_axis_dividend_tdata  (es_alu_src1        ),
+      .m_axis_dout_tvalid     (divu_done          ),
+      .m_axis_dout_tdata      (divu_res           )
+    );
+
+always @(posedge clk)
+begin
+    if(reset) begin
+        hi <= 32'b0;
+        lo <= 32'b0;
+    end else if(es_mult) begin
+        hi <= mult_res[63:32];
+        lo <= mult_res[31: 0];
+    end else if(es_multu) begin
+        hi <= multu_res[63:32];
+        lo <= multu_res[31: 0];
+    end else if(es_div && div_done) begin
+        lo <= div_res[63:32];
+        hi <= div_res[31: 0];
+    end else if(es_divu && divu_done) begin
+        lo <= divu_res[63:32];
+        hi <= divu_res[31: 0];
+    end else if(es_mthi) begin
+        hi <= es_rs_value;
+        lo <= lo;
+    end else if(es_mtlo) begin
+        hi <= hi;
+        lo <= es_rs_value;
+    end else begin
+        hi <= hi;
+        lo <= lo;
+    end
+end
 endmodule

@@ -321,7 +321,9 @@ assign rs_valid = inst_addu || inst_subu || inst_slt  ||
                   inst_addi || inst_sub  || inst_slti ||
                   inst_sltiu|| inst_andi || inst_ori  ||
                   inst_xori || inst_sllv || inst_srav ||
-                  inst_srlv;
+                  inst_srlv || inst_mult || inst_multu||
+                  inst_div  || inst_divu || inst_mthi ||
+                  inst_mtlo;
 
 assign rt_valid = inst_addu || inst_subu || inst_slt  ||
                   inst_sltu || inst_and  || inst_or   ||
@@ -329,7 +331,8 @@ assign rt_valid = inst_addu || inst_subu || inst_slt  ||
                   inst_srl  || inst_sra  || inst_sw   ||
                   inst_beq  || inst_bne  || inst_add  ||
                   inst_sub  || inst_sllv || inst_srav ||
-                  inst_srlv;
+                  inst_srlv || inst_mult || inst_multu||
+                  inst_div  || inst_divu;
 
 assign rs_eq_es_dest = es_block_valid && (rs == es_dest ) && rs_valid && rs && es_dest;
 assign rs_eq_ms_dest = ms_block_valid && (rs == ms_dest ) && rs_valid && rs && ms_dest;
@@ -350,12 +353,12 @@ assign blocked = es_load && (rs_eq_es_dest || rt_eq_es_dest);
 assign rs_value = rs_es_fwd_valid ? es_res   :
                   rs_ms_fwd_valid ? ms_res   :
                   rs_ws_fwd_valid ? rf_wdata :
-                  rf_rdata1;
+                                    rf_rdata1;
 
 assign rt_value = rt_es_fwd_valid ? es_res   :
                   rt_ms_fwd_valid ? ms_res   :
                   rt_ws_fwd_valid ? rf_wdata :
-                  rf_rdata2;
+                                    rf_rdata2;
 
 // Branch and Jump parts
 assign rs_eq_rt = (rs_value == rt_value);

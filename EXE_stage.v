@@ -87,13 +87,15 @@ wire [63:0] multu_res;
 wire [63:0] div_res;
 wire [63:0] divu_res;
 // div
-reg  div_valid;
+reg  div_work;
+wire div_valid;
 wire div_ready;
 wire div_divisor_ready;
 wire div_dividend_ready;
 wire div_done;
 // divu
-reg  divu_valid;
+reg  divu_work;
+wire divu_valid;
 wire divu_ready;
 wire divu_divisor_ready;
 wire divu_dividend_ready;
@@ -164,28 +166,30 @@ assign multu_res = es_alu_src1 * es_alu_src2;
 // div 
 assign div_ready = div_divisor_ready & div_dividend_ready;
 assign divu_ready = divu_divisor_ready & divu_dividend_ready;
-// div_ready
+// div_valid
 always @(posedge clk)
 begin
     if(reset) begin
-        div_valid <= 1'b0;
+        div_work <= 1'b0;
     end else if(div_ready && div_valid) begin
-        div_valid <= 1'b0;
-    end else if (ds_to_es_valid && es_allowin) begin
-        div_valid <= ds_to_es_bus[142:142];
+        div_work <= 1'b1;
+    end else if(div_done) begin
+        div_work <= 1'b0;
     end
 end
-// divu_ready
+assign div_valid = es_valid && es_div && !div_work;
+// divu_valid
 always @(posedge clk)
 begin
     if(reset) begin
-        divu_valid <= 1'b0;
+        divu_work <= 1'b0;
     end else if(divu_ready && divu_valid) begin
-        divu_valid <= 1'b0;
-    end else if(ds_to_es_valid && es_allowin) begin
-        divu_valid <= ds_to_es_bus[141:141];
+        divu_work <= 1'b1;
+    end else if(divu_done) begin
+        divu_work <= 1'b0;
     end
 end
+assign divu_valid = es_valid && es_divu && !divu_work;
 
 mydiv u_mydiv(
       .aclk                   (clk               ),
@@ -198,7 +202,6 @@ mydiv u_mydiv(
       .m_axis_dout_tvalid     (div_done          ),
       .m_axis_dout_tdata      (div_res           )
     );
-    
 mydivu u_mydivu(
       .aclk                   (clk                ),
       .s_axis_divisor_tvalid  (divu_valid         ),

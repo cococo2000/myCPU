@@ -41,35 +41,37 @@ wire        es_src2_is_imm;
 wire        es_src2_is_uimm;
 wire        es_src2_is_8  ;
 wire        es_gr_we      ;
-wire        es_mem_we     ;
+wire [ 4:0] es_st_inst    ;
+wire [ 6:0] es_ld_inst    ;
 wire [ 4:0] es_dest       ;
 wire [15:0] es_imm        ;
 wire [31:0] es_rs_value   ;
 wire [31:0] es_rt_value   ;
 wire [31:0] es_pc         ;
-assign {
-        es_mult        ,  // 144:144
-        es_multu       ,  // 143:143
-        es_div         ,  // 142:142
-        es_divu        ,  // 141:141
-        es_mfhi        ,  // 140:140
-        es_mflo        ,  // 139:139
-        es_mthi        ,  // 138:138
-        es_mtlo        ,  // 137:137
-        es_alu_op      ,  // 136:125
-        es_load_op     ,  // 124:124
-        es_src1_is_sa  ,  // 123:123
-        es_src1_is_pc  ,  // 122:122
-        es_src2_is_imm ,  // 121:121
-        es_src2_is_uimm,  // 120:120
-        es_src2_is_8   ,  // 119:119
-        es_gr_we       ,  // 118:118
-        es_mem_we      ,  // 117:117
-        es_dest        ,  // 116:112
-        es_imm         ,  // 111:96
-        es_rs_value    ,  // 95 :64
-        es_rt_value    ,  // 63 :32
-        es_pc             // 31 :0
+
+assign {es_ld_inst     ,
+        es_st_inst     ,
+        es_mult        ,
+        es_multu       ,
+        es_div         ,
+        es_divu        ,
+        es_mfhi        ,
+        es_mflo        ,
+        es_mthi        ,
+        es_mtlo        ,
+        es_alu_op      ,
+        es_load_op     ,
+        es_src1_is_sa  ,
+        es_src1_is_pc  ,
+        es_src2_is_imm ,
+        es_src2_is_uimm,
+        es_src2_is_8   ,
+        es_gr_we       ,
+        es_dest        ,
+        es_imm         ,
+        es_rs_value    ,
+        es_rt_value    ,
+        es_pc             
        } = ds_to_es_bus_r;
 
 wire [31:0] es_alu_src1   ;
@@ -77,7 +79,6 @@ wire [31:0] es_alu_src2   ;
 wire [31:0] es_alu_result ;
 wire [31:0] es_res        ;
 
-wire        es_res_from_mem;
 
 // mul & div parts
 reg  [31:0] hi;
@@ -101,11 +102,11 @@ wire divu_divisor_ready;
 wire divu_dividend_ready;
 wire divu_done;
 
-assign es_res_from_mem = es_load_op;
 assign es_res = es_mfhi ? hi :
                 es_mflo ? lo :
                           es_alu_result;
-assign es_to_ms_bus = {es_res_from_mem,  //70:70
+assign es_to_ms_bus = {es_rt_value    ,  //108:77
+                       es_ld_inst     ,  //76:70
                        es_gr_we       ,  //69:69
                        es_dest        ,  //68:64
                        es_res         ,  //63:32
@@ -143,10 +144,50 @@ alu u_alu(
     .alu_result (es_alu_result)
     );
 
+wire inst_sw;
+wire inst_sh;
+wire inst_sb;
+wire inst_swl;
+wire inst_swr;
+
+assign {inst_sw , 
+        inst_sh , 
+        inst_sb , 
+        inst_swl, 
+        inst_swr
+        } = es_st_inst;
+
+wire [ 1:0] mem_pos;
+wire [31:0] st_data;
+wire [31:0] swl_data;
+wire [31:0] swr_data;
+assign swl_data     = mem_pos == 2'd0 ? {24'b0, es_rt_value[31:24]} :
+                      mem_pos == 2'd1 ? {16'b0, es_rt_value[31:16]} :
+                      mem_pos == 2'd2 ? { 8'b0, es_rt_value[31: 8]} :
+                      es_rt_value;
+assign swr_data     = mem_pos == 2'd3 ? {es_rt_value[ 7:0],24'b0}   :
+                      mem_pos == 2'd2 ? {es_rt_value[15:0],16'b0}   :
+                      mem_pos == 2'd1 ? {es_rt_value[23:0], 8'b0}   :
+                      es_rt_value;
+assign st_data      = inst_sw ? es_rt_value             :
+                      inst_sb ? {4{es_rt_value[7:0]}}   :
+                      inst_sh ? {2{es_rt_value[15:0]}}  :
+                      inst_swl? swl_data                :
+                      inst_swr? swr_data                :
+                                es_rt_value;
+
+assign mem_pos = es_alu_result[1:0];
+
 assign data_sram_en    = 1'b1;
-assign data_sram_wen   = (es_mem_we && es_valid) ? 4'hf : 4'h0;
-assign data_sram_addr  = es_alu_result;
-assign data_sram_wdata = es_rt_value;
+assign data_sram_wen   ={4{es_valid}}& ( 
+                        inst_sw ? {4'hf}                                                                        : 
+                        inst_sh ? {{2{mem_pos[1]}},{2{~mem_pos[1]}}}                                            :
+                        inst_sb ? {{mem_pos == 2'd3}, {mem_pos == 2'd2}, {mem_pos == 2'd1}, {mem_pos == 2'd0}}  :                                                                            
+                        inst_swl? {{mem_pos == 2'd3} ,{mem_pos[1]},{mem_pos!=2'd0},1'b1}        :
+                        inst_swr? {1'b1, {mem_pos != 2'd3}, !mem_pos[1], mem_pos == 2'd0}      :
+                                  {4'b0});
+assign data_sram_addr  = {es_alu_result[31: 2], 2'b0};
+assign data_sram_wdata = st_data;
 
 // es forward bus
 wire es_block;

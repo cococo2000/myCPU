@@ -25,14 +25,6 @@ reg         es_valid      ;
 wire        es_ready_go   ;
 
 reg  [`DS_TO_ES_BUS_WD -1:0] ds_to_es_bus_r;
-wire        es_mult       ;
-wire        es_multu      ;
-wire        es_div        ;
-wire        es_divu       ;
-wire        es_mfhi       ;
-wire        es_mflo       ;
-wire        es_mthi       ;
-wire        es_mtlo       ;
 wire [11:0] es_alu_op     ;
 wire        es_load_op    ;
 wire        es_src1_is_sa ;
@@ -43,35 +35,29 @@ wire        es_src2_is_8  ;
 wire        es_gr_we      ;
 wire [ 4:0] es_st_inst    ;
 wire [ 6:0] es_ld_inst    ;
+wire [ 7:0] es_md_inst    ;
 wire [ 4:0] es_dest       ;
 wire [15:0] es_imm        ;
 wire [31:0] es_rs_value   ;
 wire [31:0] es_rt_value   ;
 wire [31:0] es_pc         ;
 
-assign {es_ld_inst     ,
-        es_st_inst     ,
-        es_mult        ,
-        es_multu       ,
-        es_div         ,
-        es_divu        ,
-        es_mfhi        ,
-        es_mflo        ,
-        es_mthi        ,
-        es_mtlo        ,
-        es_alu_op      ,
-        es_load_op     ,
-        es_src1_is_sa  ,
-        es_src1_is_pc  ,
-        es_src2_is_imm ,
-        es_src2_is_uimm,
-        es_src2_is_8   ,
-        es_gr_we       ,
-        es_dest        ,
-        es_imm         ,
-        es_rs_value    ,
-        es_rt_value    ,
-        es_pc             
+assign {es_ld_inst     , // 155:149
+        es_st_inst     , // 148:144
+        es_md_inst     , // 143:136
+        es_alu_op      , // 135:124
+        es_load_op     , // 123:123
+        es_src1_is_sa  , // 122:122
+        es_src1_is_pc  , // 121:121
+        es_src2_is_imm , // 120:120
+        es_src2_is_uimm, // 119:119
+        es_src2_is_8   , // 118:118
+        es_gr_we       , // 117:117
+        es_dest        , // 116:112
+        es_imm         , // 111:96
+        es_rs_value    , // 95 :64
+        es_rt_value    , // 63 :32
+        es_pc            // 31 :0
        } = ds_to_es_bus_r;
 
 wire [31:0] es_alu_src1   ;
@@ -81,11 +67,27 @@ wire [31:0] es_res        ;
 
 
 // mul & div parts
-reg  [31:0] hi;
-reg  [31:0] lo;
-wire [63:0] mult_res;
-wire [63:0] multu_res;
-wire [63:0] div_res;
+wire        es_mult ;
+wire        es_multu;
+wire        es_div  ;
+wire        es_divu ;
+wire        es_mfhi ;
+wire        es_mflo ;
+wire        es_mthi ;
+wire        es_mtlo ;
+assign {es_mult     ,
+        es_multu    ,
+        es_div      ,
+        es_divu     ,
+        es_mfhi     ,
+        es_mflo     ,
+        es_mthi     ,
+        es_mtlo
+       } = es_md_inst;
+reg  [31:0] hi      ;
+reg  [31:0] lo      ;
+wire [63:0] mul_res ;
+wire [63:0] div_res ;
 wire [63:0] divu_res;
 // div
 reg  div_work;
@@ -105,12 +107,11 @@ wire divu_done;
 assign es_res = es_mfhi ? hi :
                 es_mflo ? lo :
                           es_alu_result;
-assign es_to_ms_bus = {es_rt_value    ,  //108:77
-                       es_ld_inst     ,  //76:70
-                       es_gr_we       ,  //69:69
-                       es_dest        ,  //68:64
-                       es_res         ,  //63:32
-                       es_pc             //31:0
+assign es_to_ms_bus = {es_ld_inst     ,  // 76:70
+                       es_gr_we       ,  // 69:69
+                       es_dest        ,  // 68:64
+                       es_res         ,  // 63:32
+                       es_pc             // 31:0
                       };
 
 assign es_ready_go    = !(es_div || es_divu) || (es_div && div_done) || (es_divu && divu_done);
@@ -165,27 +166,27 @@ assign swl_data     = mem_pos == 2'd0 ? {24'b0, es_rt_value[31:24]} :
                       mem_pos == 2'd1 ? {16'b0, es_rt_value[31:16]} :
                       mem_pos == 2'd2 ? { 8'b0, es_rt_value[31: 8]} :
                       es_rt_value;
-assign swr_data     = mem_pos == 2'd3 ? {es_rt_value[ 7:0],24'b0}   :
-                      mem_pos == 2'd2 ? {es_rt_value[15:0],16'b0}   :
-                      mem_pos == 2'd1 ? {es_rt_value[23:0], 8'b0}   :
+assign swr_data     = mem_pos == 2'd3 ? {es_rt_value[ 7: 0], 24'b0} :
+                      mem_pos == 2'd2 ? {es_rt_value[15: 0], 16'b0} :
+                      mem_pos == 2'd1 ? {es_rt_value[23: 0],  8'b0} :
                       es_rt_value;
-assign st_data      = inst_sw ? es_rt_value             :
-                      inst_sb ? {4{es_rt_value[7:0]}}   :
-                      inst_sh ? {2{es_rt_value[15:0]}}  :
-                      inst_swl? swl_data                :
-                      inst_swr? swr_data                :
+assign st_data      = inst_sw ? es_rt_value            :
+                      inst_sb ? {4{es_rt_value[ 7:0]}} :
+                      inst_sh ? {2{es_rt_value[15:0]}} :
+                      inst_swl? swl_data               :
+                      inst_swr? swr_data               :
                                 es_rt_value;
 
 assign mem_pos = es_alu_result[1:0];
 
 assign data_sram_en    = 1'b1;
-assign data_sram_wen   ={4{es_valid}}& ( 
-                        inst_sw ? {4'hf}                                                                        : 
-                        inst_sh ? {{2{mem_pos[1]}},{2{~mem_pos[1]}}}                                            :
-                        inst_sb ? {{mem_pos == 2'd3}, {mem_pos == 2'd2}, {mem_pos == 2'd1}, {mem_pos == 2'd0}}  :                                                                            
-                        inst_swl? {{mem_pos == 2'd3} ,{mem_pos[1]},{mem_pos!=2'd0},1'b1}        :
-                        inst_swr? {1'b1, {mem_pos != 2'd3}, !mem_pos[1], mem_pos == 2'd0}      :
-                                  {4'b0});
+assign data_sram_wen   ={4{es_valid}} & ( 
+                        inst_sw ?  4'hf                                                                :
+                        inst_sh ? {                 {2{mem_pos[1]}},                 {2{~mem_pos[1]}}} :
+                        inst_sb ? {mem_pos == 2'd3, mem_pos == 2'd2, mem_pos == 2'd1, mem_pos == 2'd0} :
+                        inst_swl? {mem_pos == 2'd3, mem_pos[1]     , mem_pos!=2'd0  , 1'b1           } :
+                        inst_swr? {1'b1           , mem_pos != 2'd3, !mem_pos[1]    , mem_pos == 2'd0} :
+                                   4'b0);
 assign data_sram_addr  = {es_alu_result[31: 2], 2'b0};
 assign data_sram_wdata = st_data;
 
@@ -202,8 +203,8 @@ assign es_fwd_bus = {es_load_op && es_valid,   // 38:38
 
 // mul & div parts
 // mul
-assign mult_res  = $signed(es_alu_src1) * $signed(es_alu_src2);
-assign multu_res = es_alu_src1 * es_alu_src2;
+assign mul_res = $signed({es_alu_src1[31] & es_mult, es_alu_src1}) * $signed({es_alu_src2[31] & es_mult, es_alu_src2});
+
 // div 
 assign div_ready = div_divisor_ready & div_dividend_ready;
 assign divu_ready = divu_divisor_ready & divu_dividend_ready;
@@ -260,12 +261,9 @@ begin
     if(reset) begin
         hi <= 32'b0;
         lo <= 32'b0;
-    end else if(es_mult) begin
-        hi <= mult_res[63:32];
-        lo <= mult_res[31: 0];
-    end else if(es_multu) begin
-        hi <= multu_res[63:32];
-        lo <= multu_res[31: 0];
+    end else if(es_mult || es_multu) begin
+        hi <= mul_res[63:32];
+        lo <= mul_res[31: 0];
     end else if(es_div && div_done) begin
         lo <= div_res[63:32];
         hi <= div_res[31: 0];

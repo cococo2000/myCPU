@@ -270,7 +270,7 @@ assign inst_mfhi   = op_d[6'h00] & func_d[6'h10] & rs_d[5'h00] & rt_d[5'h00] & s
 assign inst_mflo   = op_d[6'h00] & func_d[6'h12] & rs_d[5'h00] & rt_d[5'h00] & sa_d[5'h00];
 assign inst_mthi   = op_d[6'h00] & func_d[6'h11] & rt_d[5'h00] & rd_d[5'h00] & sa_d[5'h00];
 assign inst_mtlo   = op_d[6'h00] & func_d[6'h13] & rt_d[5'h00] & rd_d[5'h00] & sa_d[5'h00];
-//lab7
+// lab7
 assign inst_bgez   = op_d[6'h01] & rt_d[5'h01];
 assign inst_bgtz   = op_d[6'h07] & rt_d[5'h00];
 assign inst_blez   = op_d[6'h06] & rt_d[5'h00];
@@ -317,7 +317,7 @@ assign src2_is_imm  = inst_addiu | inst_addi | inst_slti    | inst_sltiu |
                       inst_swr;
 assign src2_is_uimm = inst_andi  | inst_ori  | inst_xori;
 assign src2_is_8    = inst_jal   | inst_jalr | inst_bltzal  | inst_bgezal;
-assign dst_is_r31   = inst_jal | inst_bltzal  | inst_bgezal;
+assign dst_is_r31   = inst_jal   | inst_bltzal  | inst_bgezal;
 assign dst_is_rt    = inst_addiu | inst_addi | inst_slti    | inst_sltiu |
                       inst_andi  | inst_ori  | inst_xori    |
                       inst_lui   | inst_lw   | inst_lh      | inst_lhu   |
@@ -460,10 +460,14 @@ assign rt_value = rt_es_fwd_valid ? es_res      :
                                     rf_rdata2   ;
 
 // Branch and Jump parts
+wire branch_op;
+assign branch_op= inst_beq || inst_bne || inst_bltz || 
+                  inst_bgez|| inst_bgtz|| inst_blez ||
+                  inst_bltzal || inst_bgezal;
 assign rs_eq_rt = (rs_value == rt_value);
 assign rs_ltz   = rs_value[31];
 assign rs_gtz   = !rs_value[31] & (|rs_value);
-assign br_stall = blocked && ds_valid && (inst_beq || inst_bne || inst_jr);
+assign br_stall = blocked && ds_valid && (branch_op || inst_jr || inst_jalr);
 assign br_taken = (   inst_beq                  &&  rs_eq_rt
                    || inst_bne                  && !rs_eq_rt
                    || (inst_bltz | inst_bltzal) &&  rs_ltz
@@ -475,11 +479,10 @@ assign br_taken = (   inst_beq                  &&  rs_eq_rt
                    || inst_jr
                    || inst_j
                   ) && ds_valid;
-assign br_target = (inst_beq || inst_bne || inst_bltz || 
-                    inst_bgez|| inst_bgtz|| inst_blez ||
-                    inst_bltzal || inst_bgezal) ? (fs_pc + {{14{imm[15]}}, imm[15:0], 2'b0}) :
-                   (inst_jr  || inst_jalr)? rs_value :
-                   (inst_jal || inst_j)   ? {fs_pc[31:28], jidx[25:0], 2'b0} : 32'b0;
+assign br_target =  branch_op             ? (fs_pc + {{14{imm[15]}}, imm[15:0], 2'b0}) :
+                   (inst_jr  || inst_jalr)? rs_value                                   :
+                   (inst_jal || inst_j)   ? {fs_pc[31:28], jidx[25:0], 2'b0}           :
+                                            32'b0;
 assign br_bus    = {br_stall, br_taken, br_target};
 
 endmodule

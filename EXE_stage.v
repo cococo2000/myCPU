@@ -64,7 +64,7 @@ wire [31:0] es_alu_src1   ;
 wire [31:0] es_alu_src2   ;
 wire [31:0] es_alu_result ;
 wire [31:0] es_res        ;
-
+wire        es_res_from_mem;
 
 // mul & div parts
 wire        es_mult ;
@@ -107,7 +107,9 @@ wire divu_done;
 assign es_res = es_mfhi ? hi :
                 es_mflo ? lo :
                           es_alu_result;
-assign es_to_ms_bus = {es_ld_inst     ,  // 76:70
+assign es_res_from_mem = es_load_op;
+assign es_to_ms_bus = {es_ld_inst     ,  // 77:71
+                       es_res_from_mem,  // 70:70
                        es_gr_we       ,  // 69:69
                        es_dest        ,  // 68:64
                        es_res         ,  // 63:32

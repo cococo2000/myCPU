@@ -305,8 +305,7 @@ assign alu_op[ 9] = inst_srl  | inst_srlv;
 assign alu_op[10] = inst_sra  | inst_srav;
 assign alu_op[11] = inst_lui;
 
-assign load_op      = inst_lw    | inst_lb   | inst_lbu     | inst_lh    | 
-                      inst_lhu   | inst_lwl  | inst_lwr;
+assign load_op      = (|ld_inst);
 
 assign src1_is_sa   = inst_sll   | inst_srl  | inst_sra;
 assign src1_is_pc   = inst_jal   | inst_jalr | inst_bltzal  | inst_bgezal;

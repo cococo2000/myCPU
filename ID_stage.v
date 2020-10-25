@@ -48,7 +48,7 @@ wire        src1_is_pc;
 wire        src2_is_imm;
 wire        src2_is_uimm;
 wire        src2_is_8;
-wire        res_from_mem;
+// wire        res_from_mem;
 wire        gr_we;
 wire [ 4:0] dest;
 wire [15:0] imm;
@@ -317,8 +317,7 @@ assign src2_is_imm  = inst_addiu | inst_addi | inst_slti    | inst_sltiu |
                       inst_swr;
 assign src2_is_uimm = inst_andi  | inst_ori  | inst_xori;
 assign src2_is_8    = inst_jal   | inst_jalr | inst_bltzal  | inst_bgezal;
-assign res_from_mem = inst_lw;
-assign dst_is_r31   = inst_jal   | inst_jalr | inst_bltzal  | inst_bgezal;
+assign dst_is_r31   = inst_jal | inst_bltzal  | inst_bgezal;
 assign dst_is_rt    = inst_addiu | inst_addi | inst_slti    | inst_sltiu |
                       inst_andi  | inst_ori  | inst_xori    |
                       inst_lui   | inst_lw   | inst_lh      | inst_lhu   |

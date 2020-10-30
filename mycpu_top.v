@@ -42,6 +42,17 @@ wire [`BR_BUS_WD       -1:0] br_bus;
 wire [`ES_FWD_BUS_WD   -1:0] es_fwd_bus;
 wire [`MS_FWD_BUS_WD   -1:0] ms_fwd_bus;
 
+// exception
+wire [31:0] cp0_epc ;
+wire        ws_eret ;
+wire        ws_ex   ;
+wire        ms_flush;
+wire        flush   ;
+assign flush = ws_ex || ws_eret;
+
+wire es_data_valid;
+assign es_data_valid = !(flush || ms_flush);
+
 // IF stage
 if_stage if_stage(
     .clk            (clk            ),
@@ -58,7 +69,11 @@ if_stage if_stage(
     .inst_sram_wen  (inst_sram_wen  ),
     .inst_sram_addr (inst_sram_addr ),
     .inst_sram_wdata(inst_sram_wdata),
-    .inst_sram_rdata(inst_sram_rdata)
+    .inst_sram_rdata(inst_sram_rdata),
+
+    .cp0_epc     (cp0_epc     ),
+    .ws_eret     (ws_eret     ),
+    .ws_ex       (ws_ex       )
 );
 // ID stage
 id_stage id_stage(
@@ -79,7 +94,8 @@ id_stage id_stage(
     .ws_to_rf_bus   (ws_to_rf_bus   ),
     //forward_bus
     .es_fwd_bus     (es_fwd_bus     ),
-    .ms_fwd_bus     (ms_fwd_bus     )
+    .ms_fwd_bus     (ms_fwd_bus     ),
+    .flush          (flush          )
 );
 // EXE stage
 exe_stage exe_stage(
@@ -100,7 +116,9 @@ exe_stage exe_stage(
     .data_sram_addr (data_sram_addr ),
     .data_sram_wdata(data_sram_wdata),
     //forward_bus
-    .es_fwd_bus     (es_fwd_bus     )
+    .es_fwd_bus     (es_fwd_bus     ),
+    .es_data_valid  (es_data_valid  ),
+    .flush          (flush          )
 );
 // MEM stage
 mem_stage mem_stage(
@@ -118,7 +136,9 @@ mem_stage mem_stage(
     //from data-sram
     .data_sram_rdata(data_sram_rdata),
     //forward_bus
-    .ms_fwd_bus     (ms_fwd_bus     )
+    .ms_fwd_bus     (ms_fwd_bus     ),
+    .ms_flush       (ms_flush       ),
+    .flush          (flush          )
 );
 // WB stage
 wb_stage wb_stage(
@@ -135,7 +155,11 @@ wb_stage wb_stage(
     .debug_wb_pc      (debug_wb_pc      ),
     .debug_wb_rf_wen  (debug_wb_rf_wen  ),
     .debug_wb_rf_wnum (debug_wb_rf_wnum ),
-    .debug_wb_rf_wdata(debug_wb_rf_wdata)
+    .debug_wb_rf_wdata(debug_wb_rf_wdata),
+
+    .cp0_epc     (cp0_epc     ),
+    .ws_eret     (ws_eret     ),
+    .ws_ex       (ws_ex       )
 );
 
 endmodule

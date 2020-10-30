@@ -18,7 +18,10 @@ module exe_stage(
     output [31:0] data_sram_addr ,
     output [31:0] data_sram_wdata,
     // forward
-    output [`ES_FWD_BUS_WD -1:0]   es_fwd_bus
+    output [`ES_FWD_BUS_WD -1:0]   es_fwd_bus,
+
+    input es_data_valid,
+    input flush
 );
 
 reg         es_valid      ;
@@ -42,28 +45,50 @@ wire [31:0] es_rs_value   ;
 wire [31:0] es_rt_value   ;
 wire [31:0] es_pc         ;
 
-assign {es_ld_inst     , // 155:149
-        es_st_inst     , // 148:144
-        es_md_inst     , // 143:136
-        es_alu_op      , // 135:124
-        es_load_op     , // 123:123
-        es_src1_is_sa  , // 122:122
-        es_src1_is_pc  , // 121:121
-        es_src2_is_imm , // 120:120
-        es_src2_is_uimm, // 119:119
-        es_src2_is_8   , // 118:118
-        es_gr_we       , // 117:117
-        es_dest        , // 116:112
-        es_imm         , // 111:96
-        es_rs_value    , // 95 :64
-        es_rt_value    , // 63 :32
-        es_pc            // 31 :0
+// exception
+wire [10:0] root_bus        ;
+wire        es_mtc0         ;
+wire        es_mfc0         ;
+wire        es_bd           ;
+wire        ds_ex           ;
+wire [ 4:0] ds_excode       ;
+wire        es_overflow_inst;
+wire        es_ex           ;
+wire [ 4:0] es_excode       ;
+wire        es_alu_overflow ;
+wire        es_overflow     ;
+wire        es_ld_addr_error;
+wire        es_st_addr_error;
+assign {
+        root_bus        , // 174:164
+        es_bd           , // 163:163
+        ds_ex           , // 162:162
+        ds_excode       , // 161:157
+        es_overflow_inst, // 156:156
+        es_ld_inst      , // 155:149
+        es_st_inst      , // 148:144
+        es_md_inst      , // 143:136
+        es_alu_op       , // 135:124
+        es_load_op      , // 123:123
+        es_src1_is_sa   , // 122:122
+        es_src1_is_pc   , // 121:121
+        es_src2_is_imm  , // 120:120
+        es_src2_is_uimm , // 119:119
+        es_src2_is_8    , // 118:118
+        es_gr_we        , // 117:117
+        es_dest         , // 116:112
+        es_imm          , // 111:96
+        es_rs_value     , // 95 :64
+        es_rt_value     , // 63 :32
+        es_pc             // 31 :0
        } = ds_to_es_bus_r;
+assign es_mtc0 = root_bus[9] && es_valid;
+assign es_mfc0 = root_bus[8] && es_valid;
 
-wire [31:0] es_alu_src1   ;
-wire [31:0] es_alu_src2   ;
-wire [31:0] es_alu_result ;
-wire [31:0] es_res        ;
+wire [31:0] es_alu_src1    ;
+wire [31:0] es_alu_src2    ;
+wire [31:0] es_alu_result  ;
+wire [31:0] es_res         ;
 wire        es_res_from_mem;
 
 // mul & div parts
@@ -106,9 +131,16 @@ wire divu_done;
 
 assign es_res = es_mfhi ? hi :
                 es_mflo ? lo :
+                es_mtc0 ? es_rt_value :
                           es_alu_result;
+assign es_overflow = es_alu_overflow && es_overflow_inst;
 assign es_res_from_mem = es_load_op;
-assign es_to_ms_bus = {es_ld_inst     ,  // 77:71
+assign es_to_ms_bus = {
+                       root_bus       ,  // 95:85
+                       es_bd          ,  // 84:84
+                       es_ex          ,  // 83:83
+                       es_excode      ,  // 82:78
+                       es_ld_inst     ,  // 77:71
                        es_res_from_mem,  // 70:70
                        es_gr_we       ,  // 69:69
                        es_dest        ,  // 68:64
@@ -116,9 +148,9 @@ assign es_to_ms_bus = {es_ld_inst     ,  // 77:71
                        es_pc             // 31:0
                       };
 
-assign es_ready_go    = !(es_div || es_divu) || (es_div && div_done) || (es_divu && divu_done);
+assign es_ready_go    = !(es_div || es_divu) || (es_div && div_done) || (es_divu && divu_done) || !es_data_valid;
 assign es_allowin     = !es_valid || es_ready_go && ms_allowin;
-assign es_to_ms_valid =  es_valid && es_ready_go;
+assign es_to_ms_valid =  es_valid && es_ready_go && !flush;
 always @(posedge clk) begin
     if (reset) begin
         es_valid <= 1'b0;
@@ -141,10 +173,11 @@ assign es_alu_src2 = es_src2_is_imm ? {{16{es_imm[15]}}, es_imm[15:0]} :
                                       es_rt_value;
 
 alu u_alu(
-    .alu_op     (es_alu_op    ),
-    .alu_src1   (es_alu_src1  ),
-    .alu_src2   (es_alu_src2  ),
-    .alu_result (es_alu_result)
+    .alu_op     (es_alu_op      ),
+    .alu_src1   (es_alu_src1    ),
+    .alu_src2   (es_alu_src2    ),
+    .alu_result (es_alu_result  ),
+    .overflow   (es_alu_overflow)
     );
 
 wire inst_sw;
@@ -180,9 +213,27 @@ assign st_data      = inst_sw ? es_rt_value            :
                                 es_rt_value;
 
 assign mem_pos = es_alu_result[1:0];
-
-assign data_sram_en    = 1'b1;
-assign data_sram_wen   ={4{es_valid}} & ( 
+assign es_st_addr_error = (inst_sh & mem_pos[0])         // sh
+                       || (inst_sw & (mem_pos != 2'b0)); // sw
+wire        inst_lw ;
+wire        inst_lb ;
+wire        inst_lbu;
+wire        inst_lh ;
+wire        inst_lhu;
+wire        inst_lwl;
+wire        inst_lwr;
+assign {inst_lw     ,
+        inst_lb     ,
+        inst_lbu    ,
+        inst_lh     , 
+        inst_lhu    ,
+        inst_lwl    ,
+        inst_lwr
+       } = es_ld_inst;
+assign es_ld_addr_error = (inst_lw & (mem_pos != 2'b00))         // lw
+                       || ((inst_lh || inst_lhu) & mem_pos[0]);  // lhu & lh
+assign data_sram_en   = 1'b1;
+assign data_sram_wen  = {4{es_valid && es_data_valid}} & (
                         inst_sw ?  4'hf                                                                :
                         inst_sh ? {                 {2{mem_pos[1]}},                 {2{~mem_pos[1]}}} :
                         inst_sb ? {mem_pos == 2'd3, mem_pos == 2'd2, mem_pos == 2'd1, mem_pos == 2'd0} :
@@ -195,9 +246,10 @@ assign data_sram_wdata = st_data;
 // es forward bus
 wire es_block;
 wire es_block_valid;
-assign es_block = es_gr_we;
+assign es_block = es_gr_we && !flush;
 assign es_block_valid  = es_block && es_valid;
-assign es_fwd_bus = {es_load_op && es_valid,   // 38:38
+assign es_fwd_bus = {es_mfc0 && es_valid   ,   // 39:39
+                     es_load_op && es_valid,   // 38:38
                      es_block_valid        ,   // 37:37
                      es_dest               ,   // 36:32
                      es_res                    // 31:0
@@ -221,7 +273,7 @@ begin
         div_work <= 1'b0;
     end
 end
-assign div_valid = es_valid && es_div && !div_work;
+assign div_valid = es_valid && es_div && !div_work && es_data_valid;
 // divu_valid
 always @(posedge clk)
 begin
@@ -233,7 +285,7 @@ begin
         divu_work <= 1'b0;
     end
 end
-assign divu_valid = es_valid && es_divu && !divu_work;
+assign divu_valid = es_valid && es_divu && !divu_work && es_data_valid;
 
 mydiv u_mydiv(
       .aclk                   (clk               ),
@@ -263,19 +315,19 @@ begin
     if(reset) begin
         hi <= 32'b0;
         lo <= 32'b0;
-    end else if(es_mult || es_multu) begin
+    end else if((es_mult || es_multu) && es_data_valid) begin
         hi <= mul_res[63:32];
         lo <= mul_res[31: 0];
-    end else if(es_div && div_done) begin
+    end else if(es_div && div_done && es_data_valid) begin
         lo <= div_res[63:32];
         hi <= div_res[31: 0];
-    end else if(es_divu && divu_done) begin
+    end else if(es_divu && divu_done && es_data_valid) begin
         lo <= divu_res[63:32];
         hi <= divu_res[31: 0];
-    end else if(es_mthi) begin
+    end else if(es_mthi && es_data_valid) begin
         hi <= es_rs_value;
         lo <= lo;
-    end else if(es_mtlo) begin
+    end else if(es_mtlo && es_data_valid) begin
         hi <= hi;
         lo <= es_rs_value;
     end else begin
@@ -283,4 +335,12 @@ begin
         lo <= lo;
     end
 end
+
+// exception
+assign es_ex     = es_valid && (ds_ex || es_overflow || es_ld_addr_error || es_st_addr_error);
+assign es_excode = {5{es_ex}} & 
+                   (ds_ex ? ds_excode
+                          : (({5{es_overflow}}      & `EX_OV  ) ||
+                             ({5{es_ld_addr_error}} & `EX_ADEL) ||
+                             ({5{es_st_addr_error}} & `EX_ADES)) );
 endmodule

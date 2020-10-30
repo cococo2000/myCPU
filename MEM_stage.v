@@ -15,7 +15,9 @@ module mem_stage(
     //from data-sram
     input  [31                 :0] data_sram_rdata,
     //forward
-    output [`MS_FWD_BUS_WD -1  :0] ms_fwd_bus
+    output [`MS_FWD_BUS_WD -1  :0] ms_fwd_bus    ,
+    output                         ms_flush      ,
+    input                          flush
 );
 
 reg         ms_valid;
@@ -29,8 +31,17 @@ wire [31:0] ms_alu_result;
 wire [31:0] ms_pc;
 wire [ 6:0] ms_ld_inst;
 wire [ 3:0] ms_rf_we;
-
-assign {ms_ld_inst     ,  // 76:70
+// exception
+wire [10:0] root_bus;
+wire        ms_bd;
+wire        es_ex;
+wire [ 4:0] es_excode;
+assign {
+        root_bus       ,  // 95:85
+        ms_bd          ,  // 84:84
+        es_ex          ,  // 83:83
+        es_excode      ,  // 82:78
+        ms_ld_inst     ,  // 77:71
         ms_res_from_mem,  // 70:70
         ms_gr_we       ,  // 69:69
         ms_dest        ,  // 68:64
@@ -40,8 +51,19 @@ assign {ms_ld_inst     ,  // 76:70
 
 wire [31:0] mem_result;
 wire [31:0] ms_final_result;
-
-assign ms_to_ws_bus = {ms_rf_we       ,  // 72:69
+wire        ms_ex;
+wire [ 4:0] ms_excode;
+wire        ms_eret;
+wire        ms_mfc0;
+assign ms_eret = ms_valid && root_bus[10];
+assign ms_mfc0 = ms_valid && root_bus[ 8];
+assign ms_flush = ms_valid && (ms_eret || ms_ex);
+assign ms_to_ws_bus = {
+                       root_bus       ,  // 90:80
+                       ms_bd          ,  // 79:79
+                       ms_ex          ,  // 78:78
+                       ms_excode      ,  // 77:73
+                       ms_rf_we       ,  // 72:69
                        ms_dest        ,  // 68:64
                        ms_final_result,  // 63:32
                        ms_pc             // 31:0
@@ -50,7 +72,7 @@ assign ms_to_ws_bus = {ms_rf_we       ,  // 72:69
 
 assign ms_ready_go    = 1'b1;
 assign ms_allowin     = !ms_valid || ms_ready_go && ws_allowin;
-assign ms_to_ws_valid = ms_valid && ms_ready_go;
+assign ms_to_ws_valid = ms_valid && ms_ready_go && !flush;
 always @(posedge clk) begin
     if (reset) begin
         ms_valid <= 1'b0;
@@ -124,10 +146,14 @@ wire ms_block;
 wire ms_block_valid;
 assign ms_block = ms_gr_we;
 assign ms_block_valid = ms_block && ms_valid;
-assign ms_fwd_bus = {ms_rf_we       ,    // 41:38
+assign ms_fwd_bus = {ms_valid && ms_mfc0,// 42:42
+                     ms_rf_we       ,    // 41:38
                      ms_block_valid ,    // 37:37
                      ms_dest        ,    // 36:32
                      ms_final_result     // 31:0
                     };
 
+// exception
+assign ms_ex = ms_valid && es_ex;
+assign ms_excode = {5{ms_ex}} & es_excode;
 endmodule

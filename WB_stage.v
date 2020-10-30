@@ -11,10 +11,14 @@ module wb_stage(
     // to rf: for write back and forward bus (to ds)
     output [`WS_TO_RF_BUS_WD -1:0]  ws_to_rf_bus  ,
     // trace debug interface
-    output [31:0] debug_wb_pc     ,
-    output [ 3:0] debug_wb_rf_wen ,
-    output [ 4:0] debug_wb_rf_wnum,
-    output [31:0] debug_wb_rf_wdata
+    output [31:0] debug_wb_pc      ,
+    output [ 3:0] debug_wb_rf_wen  ,
+    output [ 4:0] debug_wb_rf_wnum ,
+    output [31:0] debug_wb_rf_wdata,
+
+    output [31:0] cp0_epc,
+    output        ws_eret,
+    output        ws_ex
 );
 
 reg         ws_valid;
@@ -27,12 +31,33 @@ wire [31:0] ws_final_result;
 wire [31:0] ws_pc;
 wire [3 :0] ws_rf_we;
 wire [3 :0] rf_we;
-
-assign {ws_rf_we       ,  // 72:69
+// exception
+wire [10:0] root_bus;
+// wire        ws_eret; declare in output
+wire        ws_mtc0;
+wire        ws_mfc0;
+wire [ 7:0] cp0r_addr;
+wire        ws_bd;
+wire        ms_ex;
+wire [ 4:0] ms_excode;
+assign {
+        root_bus       ,  // 90:80
+        ws_bd          ,  // 79:79
+        ms_ex          ,  // 78:78
+        ms_excode      ,  // 77:73
+        ws_rf_we       ,  // 72:69
         ws_dest        ,  // 68:64
         ws_final_result,  // 63:32
         ws_pc             // 31:0
        } = ms_to_ws_bus_r;
+assign {ws_eret,   // 10:10
+        ws_mtc0,   // 9:9
+        ws_mfc0,   // 8:8
+        cp0r_addr  // 7:0
+       } = root_bus & {11{ws_valid}};
+wire [31:0] cp0_rdata;
+wire        eret_flush;
+assign eret_flush = ws_valid && ws_eret;
 
 wire [4 :0] rf_waddr;
 wire [31:0] rf_wdata;
@@ -41,10 +66,19 @@ assign ws_to_rf_bus = {rf_we   ,  //40:37
                        rf_wdata   //31:0
                       };
 
+// exception
+// wire        ws_ex; declare in output
+wire [ 4:0] ws_excode;
+assign ws_ex = ws_valid && ms_ex;
+assign ws_excode = {5{ws_ex}} & ms_excode;
+
 assign ws_ready_go = 1'b1;
 assign ws_allowin  = !ws_valid || ws_ready_go;
 always @(posedge clk) begin
     if (reset) begin
+        ws_valid <= 1'b0;
+    end
+    else if (ws_ex || eret_flush) begin
         ws_valid <= 1'b0;
     end
     else if (ws_allowin) begin
@@ -56,14 +90,30 @@ always @(posedge clk) begin
     end
 end
 
-assign rf_we    = {4{ws_valid}} & ws_rf_we;
+assign rf_we    = {4{ws_valid & ~ws_ex}} & ws_rf_we;
 assign rf_waddr = ws_dest;
-assign rf_wdata = ws_final_result;
+assign rf_wdata = ws_mfc0 ? cp0_rdata : ws_final_result;
 
 // debug info generate
 assign debug_wb_pc       = ws_pc;
 assign debug_wb_rf_wen   = rf_we;
 assign debug_wb_rf_wnum  = ws_dest;
-assign debug_wb_rf_wdata = ws_final_result;
+assign debug_wb_rf_wdata = rf_wdata;
+
+// cp0_regfile
+cp0_regfile u_cp0_regfile(
+    .clk       (clk              ),
+    .reset     (reset            ),
+    .mtc0_we   (ws_mtc0 && !ws_ex),
+    .cp0r_addr (cp0r_addr        ),
+    .c0_wdata  (ws_final_result  ),
+    .wb_bd     (ws_bd            ),
+    .wb_ex     (ws_ex            ),
+    .wb_excode (ws_excode        ),
+    .eret_flush(eret_flush       ),
+    .wb_pc     (ws_pc            ),
+    .rdata     (cp0_rdata        ),
+    .c0_epc    (cp0_epc          )
+);
 
 endmodule

@@ -20,8 +20,9 @@ module exe_stage(
     // forward
     output [`ES_FWD_BUS_WD -1:0]   es_fwd_bus,
 
-    input es_data_valid,
-    input flush
+    input  es_data_valid,
+    output es_ex,
+    input  flush
 );
 
 reg         es_valid      ;
@@ -53,7 +54,7 @@ wire        es_bd           ;
 wire        ds_ex           ;
 wire [ 4:0] ds_excode       ;
 wire        es_overflow_inst;
-wire        es_ex           ;
+// wire        es_ex           ;
 wire [ 4:0] es_excode       ;
 wire        es_alu_overflow ;
 wire        es_overflow     ;

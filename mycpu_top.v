@@ -50,8 +50,9 @@ wire        ms_flush;
 wire        flush   ;
 assign flush = ws_ex || ws_eret;
 
+wire es_ex;
 wire es_data_valid;
-assign es_data_valid = !(flush || ms_flush);
+assign es_data_valid = !(flush || ms_flush || es_ex);
 
 // IF stage
 if_stage if_stage(
@@ -118,6 +119,7 @@ exe_stage exe_stage(
     //forward_bus
     .es_fwd_bus     (es_fwd_bus     ),
     .es_data_valid  (es_data_valid  ),
+    .es_ex          (es_ex          ),
     .flush          (flush          )
 );
 // MEM stage

@@ -15,10 +15,10 @@ module wb_stage(
     output [ 3:0] debug_wb_rf_wen  ,
     output [ 4:0] debug_wb_rf_wnum ,
     output [31:0] debug_wb_rf_wdata,
-
     output [31:0] cp0_epc,
     output        ws_eret,
-    output        ws_ex
+    output        ws_ex,
+    output has_int
 );
 
 reg         ws_valid;
@@ -119,7 +119,8 @@ cp0_regfile u_cp0_regfile(
     .wb_badvaddr(wb_badvaddr     ),
     .wb_pc     (ws_pc            ),
     .rdata     (cp0_rdata        ),
-    .c0_epc    (cp0_epc          )
+    .c0_epc    (cp0_epc          ),
+    .has_int   (has_int)
 );
 
 endmodule

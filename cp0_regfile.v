@@ -159,7 +159,7 @@ end
 reg tick;
 reg [31:0] c0_count;
 always @(posedge |clk) begin
-    if(reset || (mtc0_we && c0_addr == `CR_COUNT)) 
+    if(reset || (mtc0_we && c0_addr == `CR_COMPARE)) 
         tick <= 1'b0;
     else tick <= ~tick;
     if(mtc0_we && c0_addr==`CR_COUNT)

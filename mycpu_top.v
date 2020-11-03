@@ -50,6 +50,7 @@ wire        ms_flush;
 wire        flush   ;
 wire        es_ex;
 wire        es_data_valid;
+wire has_int;
 assign flush = ws_ex || ws_eret;
 assign es_data_valid = !(flush || ms_flush || es_ex);
 
@@ -119,7 +120,8 @@ exe_stage exe_stage(
     .es_fwd_bus     (es_fwd_bus     ),
     .es_data_valid  (es_data_valid  ),
     .es_ex          (es_ex          ),
-    .flush          (flush          )
+    .flush          (flush          ),
+    .has_int        (has_int        )
 );
 // MEM stage
 mem_stage mem_stage(
@@ -160,7 +162,8 @@ wb_stage wb_stage(
 
     .cp0_epc        (cp0_epc        ),
     .ws_eret        (ws_eret        ),
-    .ws_ex          (ws_ex          )
+    .ws_ex          (ws_ex          ),
+    .has_int          (has_int          )
 );
 
 endmodule

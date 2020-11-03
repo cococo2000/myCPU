@@ -19,7 +19,8 @@ module id_stage(
     //foward_recv
     input [`ES_FWD_BUS_WD    -1:0] es_fwd_bus    ,
     input [`MS_FWD_BUS_WD    -1:0] ms_fwd_bus    ,
-    input                          flush
+    input                          flush,
+    input                          has_int
 );
 
 reg         ds_valid   ;
@@ -201,8 +202,9 @@ wire [ 7:0] md_inst;    // mul and div instruction
 
 wire        ds_ex;
 wire [ 4:0] ds_excode;
-assign ds_ex = ds_valid && (fs_ex || inst_syscall || reserved_inst || inst_break);
-assign ds_excode = {5{ds_ex}} & (fs_ex        ?  fs_excode  : 
+assign ds_ex = has_int || ds_valid && (fs_ex || inst_syscall || reserved_inst || inst_break);
+assign ds_excode = has_int ? `EX_INT : 
+                   {5{ds_ex}} & (fs_ex        ?  fs_excode  :
                                  reserved_inst?  `EX_RI     :
                                  inst_break   ?  `EX_BP     :
                                  inst_syscall ?  `EX_SYS    :

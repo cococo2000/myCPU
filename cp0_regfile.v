@@ -151,7 +151,7 @@ end
 // CP0_BadVAddr
 reg [31: 0] c0_badvaddr;
 always @(posedge |clk) begin
-    if (wb_ex && (wb_excode == `EX_ADEL || wb_excode == `EX_ADES ||wb_excode == `EX_RI))
+    if (wb_ex && (wb_excode == `EX_ADEL || wb_excode == `EX_ADES))
         c0_badvaddr <= wb_badvaddr;
 end
 

@@ -96,7 +96,8 @@ id_stage id_stage(
     //forward_bus
     .es_fwd_bus     (es_fwd_bus     ),
     .ms_fwd_bus     (ms_fwd_bus     ),
-    .flush          (flush          )
+    .flush          (flush          ),
+    .has_int        (has_int        )
 );
 // EXE stage
 exe_stage exe_stage(
@@ -120,8 +121,7 @@ exe_stage exe_stage(
     .es_fwd_bus     (es_fwd_bus     ),
     .es_data_valid  (es_data_valid  ),
     .es_ex          (es_ex          ),
-    .flush          (flush          ),
-    .has_int        (has_int        )
+    .flush          (flush          )
 );
 // MEM stage
 mem_stage mem_stage(

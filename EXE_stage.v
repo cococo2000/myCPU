@@ -22,8 +22,7 @@ module exe_stage(
 
     input  es_data_valid,
     output es_ex,
-    input  flush,
-    input has_int
+    input  flush
 );
 
 reg         es_valid      ;
@@ -343,9 +342,8 @@ begin
 end
 
 // exception
-assign es_ex     = has_int || (es_valid && (ds_ex || es_overflow || es_ld_addr_error || es_st_addr_error));
-assign es_excode = has_int ? `EX_INT : 
-                   ({5{es_ex}} & 
+assign es_ex     = es_valid && (ds_ex || es_overflow || es_ld_addr_error || es_st_addr_error);
+assign es_excode = ({5{es_ex}} & 
                    (ds_ex ? ds_excode
                           : (({5{es_overflow}}      & `EX_OV  ) |
                              ({5{es_ld_addr_error}} & `EX_ADEL) |

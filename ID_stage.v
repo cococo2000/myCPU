@@ -211,7 +211,7 @@ assign ds_excode = {5{ds_ex}} & (fs_ex        ?  fs_excode  :
 wire overflow_inst;
 assign overflow_inst = inst_add | inst_addi | inst_sub;
 wire [31:0] ds_badvaddr;
-assign ds_badvaddr = {32{ds_ex}} & (fs_ex ? es_pc : 32'b0);
+assign ds_badvaddr = {32{ds_ex}} & (fs_ex ? ds_pc : 32'b0);
 wire [ 7:0] c0_raddr;
 wire [10:0] c0_bus;
 

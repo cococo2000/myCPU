@@ -67,9 +67,6 @@ always @(posedge clk) begin
     if (reset) begin
         fs_valid <= 1'b0;
     end
-    // else if (ws_ex || ws_eret)begin
-    //     fs_valid <= 1'b0;
-    // end
     else if (fs_allowin) begin
         fs_valid <= to_fs_valid;
     end
@@ -77,12 +74,6 @@ always @(posedge clk) begin
     if (reset) begin
         fs_pc <= 32'hbfbffffc;  //trick: to make nextpc be 0xbfc00000 during reset 
     end
-    // else if (to_fs_valid && ws_ex  )  begin
-    //     fs_pc <= 32'hbfc0037c;
-    // end
-    // else if (to_fs_valid && ws_eret) begin
-    //     fs_pc <= cp0_epc - 4;
-    // end
     else if (to_fs_valid && fs_allowin) begin
         fs_pc <= nextpc;
     end
@@ -99,7 +90,7 @@ assign fs_inst         = inst_sram_rdata;
 wire   addr_error;
 assign addr_error  = (fs_pc[1:0] != 2'b0);
 assign fs_ex       = fs_valid && addr_error;
-assign fs_bd       = ds_br_or_jump_op && !ws_eret;
+assign fs_bd       = ds_br_or_jump_op;
 assign fs_excode   = {5{fs_ex}} & `EX_ADEL;
 
 endmodule

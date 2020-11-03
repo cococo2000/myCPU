@@ -13,7 +13,8 @@ module cp0_regfile(
     input [31:0] wb_pc     ,
     input [31:0] wb_badvaddr,
     output[31:0] rdata     ,
-    output reg [31:0] c0_epc
+    output reg [31:0] c0_epc,
+    output       has_int
 );
 
 wire count_eq_compare;
@@ -149,15 +150,15 @@ end
 
 // CP0_BadVAddr
 reg [31: 0] c0_badvaddr;
-always @(posedge clock) begin
-    if (wb_ex && wb_excode == `EX_ADEL)
+always @(posedge |clk) begin
+    if (wb_ex && (wb_excode == `EX_ADEL || wb_excode == `EX_ADES ||wb_excode == `EX_RI))
         c0_badvaddr <= wb_badvaddr;
 end
 
 // CP0_COUNT
 reg tick;
 reg [31:0] c0_count;
-always @(posedge clock) begin
+always @(posedge |clk) begin
     if(reset || (mtc0_we && c0_addr == `CR_COMPARE)) 
         tick <= 1'b0;
     else tick <= ~tick;
@@ -168,7 +169,7 @@ always @(posedge clock) begin
 end
 
 reg [31:0] c0_compare;
-always @(posedge clock) begin
+always @(posedge |clk) begin
     if(reset)
         c0_compare = 32'b0;
     else if(mtc0_we && c0_addr == `CR_COMPARE)
@@ -180,5 +181,11 @@ assign count_eq_compare = c0_compare == c0_count;
 assign rdata = (c0_addr == `CR_STATUS ) ? c0_status :
                (c0_addr == `CR_CAUSE  ) ? c0_cause  :
                (c0_addr == `CR_EPC    ) ? c0_epc    :
+               (c0_addr == `CR_COMPARE) ? c0_compare:
+               (c0_addr == `CR_BADVADDR)? c0_badvaddr:
                32'b0;
+
+// wire has_int;
+assign has_int = (c0_cause_ip[7:0] & c0_status_im[7:0])!=8'h00 && c0_status_ie==1'b1 && c0_status_exl==1'b0;
+
 endmodule

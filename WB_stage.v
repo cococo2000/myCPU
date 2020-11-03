@@ -40,8 +40,11 @@ wire [ 7:0] c0_raddr;
 wire        ws_bd;
 wire        ms_ex;
 wire [ 4:0] ms_excode;
+wire [31:0] ms_badvaddr;
+wire [31: 0] wb_badvaddr;
 assign {
-        c0_bus       ,  // 90:80
+        ms_badvaddr    , // 122:91
+        c0_bus         ,  // 90:80
         ws_bd          ,  // 79:79
         ms_ex          ,  // 78:78
         ms_excode      ,  // 77:73
@@ -50,6 +53,7 @@ assign {
         ws_final_result,  // 63:32
         ws_pc             // 31:0
        } = ms_to_ws_bus_r;
+assign wb_badvaddr = ms_badvaddr;
 assign {ws_eret,   // 10:10
         ws_mtc0,   // 9:9
         ws_mfc0,   // 8:8
@@ -71,6 +75,7 @@ assign ws_to_rf_bus = {rf_we   ,  //40:37
 wire [ 4:0] ws_excode;
 assign ws_ex = ws_valid && ms_ex;
 assign ws_excode = {5{ws_ex}} & ms_excode;
+
 
 assign ws_ready_go = 1'b1;
 assign ws_allowin  = !ws_valid || ws_ready_go;
@@ -111,6 +116,7 @@ cp0_regfile u_cp0_regfile(
     .wb_ex     (ws_ex            ),
     .wb_excode (ws_excode        ),
     .eret_flush(eret_flush       ),
+    .wb_badvaddr(wb_badvaddr     ),
     .wb_pc     (ws_pc            ),
     .rdata     (cp0_rdata        ),
     .c0_epc    (cp0_epc          )

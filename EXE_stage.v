@@ -60,7 +60,10 @@ wire        es_alu_overflow ;
 wire        es_overflow     ;
 wire        es_ld_addr_error;
 wire        es_st_addr_error;
+wire [31: 0]ds_badvaddr     ;
+wire [31: 0]es_badvaddr     ;
 assign {
+        ds_badvaddr     , //206:175
         c0_bus        , // 174:164
         es_bd           , // 163:163
         ds_ex           , // 162:162
@@ -137,6 +140,7 @@ assign es_res = es_mfhi ? hi :
 assign es_overflow = es_alu_overflow && es_overflow_inst;
 assign es_res_from_mem = es_load_op;
 assign es_to_ms_bus = {
+                       es_badvaddr    ,  //127:96
                        c0_bus       ,  // 95:85
                        es_bd          ,  // 84:84
                        es_ex          ,  // 83:83
@@ -341,7 +345,8 @@ end
 assign es_ex     = es_valid && (ds_ex || es_overflow || es_ld_addr_error || es_st_addr_error);
 assign es_excode = {5{es_ex}} & 
                    (ds_ex ? ds_excode
-                          : (({5{es_overflow}}      & `EX_OV  ) ||
-                             ({5{es_ld_addr_error}} & `EX_ADEL) ||
+                          : (({5{es_overflow}}      & `EX_OV  ) |
+                             ({5{es_ld_addr_error}} & `EX_ADEL) |
                              ({5{es_st_addr_error}} & `EX_ADES)) );
+assign es_badvaddr = {32{es_ex}} & (ds_ex ? ds_badvaddr : es_alu_result);
 endmodule

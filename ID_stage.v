@@ -142,6 +142,8 @@ wire        inst_mfc0;
 wire        inst_eret;
 wire        inst_syscall;
 // lab9
+wire        inst_nop;
+wire        inst_break;
 wire        reserved_inst;
 // write reg dest
 wire        dst_is_r31;  
@@ -199,24 +201,28 @@ wire [ 7:0] md_inst;    // mul and div instruction
 
 wire        ds_ex;
 wire [ 4:0] ds_excode;
-assign ds_ex = ds_valid && (fs_ex || inst_syscall || reserved_inst);
+assign ds_ex = ds_valid && (fs_ex || inst_syscall || reserved_inst || inst_break);
 assign ds_excode = {5{ds_ex}} & (fs_ex        ?  fs_excode  : 
+                                 reserved_inst?  `EX_RI     :
+                                 inst_break   ?  `EX_BP     :
                                  inst_syscall ?  `EX_SYS    :
-                                                 reserved_inst);
+                                 5'b0);
 
 wire overflow_inst;
 assign overflow_inst = inst_add | inst_addi | inst_sub;
-
+wire [31:0] ds_badvaddr;
+assign ds_badvaddr = {32{ds_ex}} & (fs_ex ? es_pc : 32'b0);
 wire [ 7:0] c0_raddr;
 wire [10:0] c0_bus;
+
 assign c0_raddr = {rd, cp0r_sel};
 assign c0_bus = {inst_eret,   // 10:10
                    inst_mtc0,   // 9:9
                    inst_mfc0,   // 8:8
                    c0_raddr    // 7:0
                   };
-assign ds_to_es_bus = {
-                       c0_bus     , // 174:164
+assign ds_to_es_bus = {ds_badvaddr  , // 206:175
+                       c0_bus       , // 174:164
                        ds_bd        , // 163:163
                        ds_ex        , // 162:162
                        ds_excode    , // 161:157
@@ -337,10 +343,11 @@ assign inst_eret    = op_d[6'h10] & ds_inst[25] & (ds_inst[24:6] == 19'b0) & fun
 assign inst_syscall = op_d[6'h00] & func_d[6'h0c];
 // lab9
 assign inst_nop     = ds_inst == 32'b0;
+assign inst_break   = op_d[6'h00] & func_d[6'h0d];
 assign reserved_inst= ~(inst_addu | inst_subu | inst_slt | inst_sltu | inst_and | inst_or | inst_xor | inst_nor | inst_sll | inst_srl | inst_sra | inst_addiu | inst_lui | inst_lw | inst_sw | inst_beq | inst_bne | inst_jal | inst_jr |
   inst_add | inst_addi | inst_sub | inst_slti | inst_sltiu | inst_andi | inst_ori | inst_xori | inst_sllv | inst_srav | inst_srlv | inst_mult | inst_multu | inst_div | inst_divu | inst_mfhi | inst_mflo | inst_mthi | inst_mtlo |
   inst_bgez | inst_bgtz | inst_blez | inst_bltz | inst_j | inst_bltzal | inst_bgezal | inst_jalr | inst_lb | inst_lbu | inst_lh | inst_lhu | inst_lwl | inst_lwr | inst_sb | inst_sh | inst_swl | inst_swr |
-  inst_mtc0 | inst_mfc0 | inst_eret | inst_syscall);
+  inst_mtc0 | inst_mfc0 | inst_eret | inst_syscall | inst_nop | inst_break);
 
 
 assign alu_op[ 0] = inst_addu | inst_addiu | inst_lw | inst_sw | inst_jal | inst_add | inst_addi |
@@ -380,7 +387,7 @@ assign gr_we        = ~inst_sw   & ~inst_beq  & ~inst_bne  & ~inst_jr    &
                       ~inst_div  & ~inst_divu & ~inst_bgez & ~inst_bgtz  &
                       ~inst_blez & ~inst_bltz & ~inst_j    & ~inst_sb    &
                       ~inst_sh   & ~inst_swl  & ~inst_swr  & ~inst_mtc0  &
-                      ~inst_syscall & ~inst_eret;
+                      ~inst_syscall & ~inst_eret & ~inst_nop & ~inst_break;
 
 assign ld_inst      = { inst_lw     ,
                         inst_lb     ,

@@ -36,8 +36,11 @@ wire [10:0] c0_bus;
 wire        ms_bd;
 wire        es_ex;
 wire [ 4:0] es_excode;
+wire [31:0] ms_badvaddr;
+wire [31:0] es_badvaddr;
 assign {
-        c0_bus       ,  // 95:85
+        es_badvaddr    ,  // 127:96
+        c0_bus         ,  // 95:85
         ms_bd          ,  // 84:84
         es_ex          ,  // 83:83
         es_excode      ,  // 82:78
@@ -48,7 +51,7 @@ assign {
         ms_alu_result  ,  // 63:32
         ms_pc             // 31:0
        } = es_to_ms_bus_r;
-
+assign ms_badvaddr = es_badvaddr;
 wire [31:0] mem_result;
 wire [31:0] ms_final_result;
 wire        ms_ex;
@@ -59,6 +62,7 @@ assign ms_eret = ms_valid && c0_bus[10];
 assign ms_mfc0 = ms_valid && c0_bus[ 8];
 assign ms_flush = ms_valid && (ms_eret || ms_ex);
 assign ms_to_ws_bus = {
+                       ms_badvaddr  ,  // 122:91
                        c0_bus       ,  // 90:80
                        ms_bd          ,  // 79:79
                        ms_ex          ,  // 78:78

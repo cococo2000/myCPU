@@ -32,12 +32,12 @@ wire [31:0] ms_pc;
 wire [ 6:0] ms_ld_inst;
 wire [ 3:0] ms_rf_we;
 // exception
-wire [10:0] root_bus;
+wire [10:0] c0_bus;
 wire        ms_bd;
 wire        es_ex;
 wire [ 4:0] es_excode;
 assign {
-        root_bus       ,  // 95:85
+        c0_bus       ,  // 95:85
         ms_bd          ,  // 84:84
         es_ex          ,  // 83:83
         es_excode      ,  // 82:78
@@ -55,11 +55,11 @@ wire        ms_ex;
 wire [ 4:0] ms_excode;
 wire        ms_eret;
 wire        ms_mfc0;
-assign ms_eret = ms_valid && root_bus[10];
-assign ms_mfc0 = ms_valid && root_bus[ 8];
+assign ms_eret = ms_valid && c0_bus[10];
+assign ms_mfc0 = ms_valid && c0_bus[ 8];
 assign ms_flush = ms_valid && (ms_eret || ms_ex);
 assign ms_to_ws_bus = {
-                       root_bus       ,  // 90:80
+                       c0_bus       ,  // 90:80
                        ms_bd          ,  // 79:79
                        ms_ex          ,  // 78:78
                        ms_excode      ,  // 77:73

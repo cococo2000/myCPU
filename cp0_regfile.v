@@ -4,35 +4,37 @@ module cp0_regfile(
     input        clk       ,
     input        reset     ,
     input        mtc0_we   ,
-    input [ 7:0] cp0r_addr ,
+    input [ 7:0] c0_raddr ,
     input [31:0] c0_wdata  ,
     input        wb_bd     ,
     input        wb_ex     ,
     input [ 4:0] wb_excode ,
     input        eret_flush,
     input [31:0] wb_pc     ,
+    input [31:0] wb_badvaddr,
     output[31:0] rdata     ,
     output reg [31:0] c0_epc
 );
 
 wire count_eq_compare;
-assign count_eq_compare = 1'b0;
 wire [ 5:0] ext_int_in;
-assign ext_int_in = 6'b0;
 wire [ 4:0] c0_addr;
 wire [ 2:0] c0_sel;
-assign {c0_addr, c0_sel} = cp0r_addr;
+
+
+// assign count_eq_compare = 1'b0;
+assign ext_int_in = 6'b0;
+assign {c0_addr, c0_sel} = c0_raddr;
 
 // CP0_STATUS
 wire [31:0] c0_status;
-
-wire [8:0] c0_status_31_23;
-wire       c0_status_bev;
-wire [5:0] c0_status_21_16;
-reg  [7:0] c0_status_im;
-wire [5:0] c0_status_7_2;
-reg        c0_status_exl;
-reg        c0_status_ie;
+wire [ 8:0] c0_status_31_23;
+wire        c0_status_bev;
+wire [ 5:0] c0_status_21_16;
+reg  [ 7:0] c0_status_im;
+wire [ 5:0] c0_status_7_2;
+reg         c0_status_exl;
+reg         c0_status_ie;
 // 31:23
 assign c0_status_31_23 = 9'b0;
 // 22:22
@@ -145,10 +147,38 @@ always @(posedge clk) begin
         c0_epc <= c0_wdata;
 end
 
+// CP0_BadVAddr
+reg [31: 0] c0_badvaddr;
+always @(posedge clock) begin
+    if (wb_ex && wb_excode == `EX_ADEL)
+        c0_badvaddr <= wb_badvaddr;
+end
+
+// CP0_COUNT
+reg tick;
+reg [31:0] c0_count;
+always @(posedge clock) begin
+    if(reset || (mtc0_we && c0_addr == `CR_COMPARE)) 
+        tick <= 1'b0;
+    else tick <= ~tick;
+    if(mtc0_we && c0_addr==`CR_COUNT)
+        c0_count <= c0_wdata;
+    else if(c0_wdata)
+        c0_count <= c0_count + 1'b1;
+end
+
+reg [31:0] c0_compare;
+always @(posedge clock) begin
+    if(reset)
+        c0_compare = 32'b0;
+    else if(mtc0_we && c0_addr == `CR_COMPARE)
+        c0_compare = c0_wdata;
+end
+
+assign count_eq_compare = c0_compare == c0_count;
 // read data
 assign rdata = (c0_addr == `CR_STATUS ) ? c0_status :
                (c0_addr == `CR_CAUSE  ) ? c0_cause  :
                (c0_addr == `CR_EPC    ) ? c0_epc    :
                32'b0;
-
 endmodule

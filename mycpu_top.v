@@ -48,10 +48,9 @@ wire        ws_eret ;
 wire        ws_ex   ;
 wire        ms_flush;
 wire        flush   ;
+wire        es_ex;
+wire        es_data_valid;
 assign flush = ws_ex || ws_eret;
-
-wire es_ex;
-wire es_data_valid;
 assign es_data_valid = !(flush || ms_flush || es_ex);
 
 // IF stage
@@ -72,9 +71,9 @@ if_stage if_stage(
     .inst_sram_wdata(inst_sram_wdata),
     .inst_sram_rdata(inst_sram_rdata),
 
-    .cp0_epc     (cp0_epc     ),
-    .ws_eret     (ws_eret     ),
-    .ws_ex       (ws_ex       )
+    .cp0_epc        (cp0_epc        ),
+    .ws_eret        (ws_eret        ),
+    .ws_ex          (ws_ex          )
 );
 // ID stage
 id_stage id_stage(
@@ -159,9 +158,9 @@ wb_stage wb_stage(
     .debug_wb_rf_wnum (debug_wb_rf_wnum ),
     .debug_wb_rf_wdata(debug_wb_rf_wdata),
 
-    .cp0_epc     (cp0_epc     ),
-    .ws_eret     (ws_eret     ),
-    .ws_ex       (ws_ex       )
+    .cp0_epc        (cp0_epc        ),
+    .ws_eret        (ws_eret        ),
+    .ws_ex          (ws_ex          )
 );
 
 endmodule

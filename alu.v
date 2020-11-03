@@ -6,18 +6,18 @@ module alu(
   output        overflow
 );
 
-wire op_add;   //¼Ó·¨²Ù×÷
-wire op_sub;   //¼õ·¨²Ù×÷
-wire op_slt;   //ÓĞ·ûºÅ±È½Ï£¬Ğ¡ÓÚÖÃÎ»
-wire op_sltu;  //ÎŞ·ûºÅ±È½Ï£¬Ğ¡ÓÚÖÃÎ»
-wire op_and;   //°´Î»Óë
-wire op_nor;   //°´Î»»ò·Ç
-wire op_or;    //°´Î»»ò
-wire op_xor;   //°´Î»Òì»ò
-wire op_sll;   //Âß¼­×óÒÆ
-wire op_srl;   //Âß¼­ÓÒÒÆ
-wire op_sra;   //ËãÊõÓÒÒÆ
-wire op_lui;   //Á¢¼´ÊıÖÃÓÚ¸ß°ë²¿·Ö
+wire op_add;   //åŠ æ³•æ“ä½œ
+wire op_sub;   //å‡æ³•æ“ä½œ
+wire op_slt;   //æœ‰ç¬¦å·æ¯”è¾ƒï¼Œå°äºç½®ä½
+wire op_sltu;  //æ— ç¬¦å·æ¯”è¾ƒï¼Œå°äºç½®ä½
+wire op_and;   //æŒ‰ä½ä¸
+wire op_nor;   //æŒ‰ä½æˆ–é
+wire op_or;    //æŒ‰ä½æˆ–
+wire op_xor;   //æŒ‰ä½å¼‚æˆ–
+wire op_sll;   //é€»è¾‘å·¦ç§»
+wire op_srl;   //é€»è¾‘å³ç§»
+wire op_sra;   //ç®—æœ¯å³ç§»
+wire op_lui;   //ç«‹å³æ•°ç½®äºé«˜åŠéƒ¨åˆ†
 
 // control code decomposition
 assign op_add  = alu_op[ 0];

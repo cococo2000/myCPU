@@ -47,7 +47,7 @@ wire [31:0] es_rt_value   ;
 wire [31:0] es_pc         ;
 
 // exception
-wire [10:0] root_bus        ;
+wire [10:0] c0_bus        ;
 wire        es_mtc0         ;
 wire        es_mfc0         ;
 wire        es_bd           ;
@@ -61,7 +61,7 @@ wire        es_overflow     ;
 wire        es_ld_addr_error;
 wire        es_st_addr_error;
 assign {
-        root_bus        , // 174:164
+        c0_bus        , // 174:164
         es_bd           , // 163:163
         ds_ex           , // 162:162
         ds_excode       , // 161:157
@@ -83,8 +83,8 @@ assign {
         es_rt_value     , // 63 :32
         es_pc             // 31 :0
        } = ds_to_es_bus_r;
-assign es_mtc0 = root_bus[9] && es_valid;
-assign es_mfc0 = root_bus[8] && es_valid;
+assign es_mtc0 = c0_bus[9] && es_valid;
+assign es_mfc0 = c0_bus[8] && es_valid;
 
 wire [31:0] es_alu_src1    ;
 wire [31:0] es_alu_src2    ;
@@ -137,7 +137,7 @@ assign es_res = es_mfhi ? hi :
 assign es_overflow = es_alu_overflow && es_overflow_inst;
 assign es_res_from_mem = es_load_op;
 assign es_to_ms_bus = {
-                       root_bus       ,  // 95:85
+                       c0_bus       ,  // 95:85
                        es_bd          ,  // 84:84
                        es_ex          ,  // 83:83
                        es_excode      ,  // 82:78

@@ -32,16 +32,16 @@ wire [31:0] ws_pc;
 wire [3 :0] ws_rf_we;
 wire [3 :0] rf_we;
 // exception
-wire [10:0] root_bus;
+wire [10:0] c0_bus;
 // wire        ws_eret; declare in output
 wire        ws_mtc0;
 wire        ws_mfc0;
-wire [ 7:0] cp0r_addr;
+wire [ 7:0] c0_raddr;
 wire        ws_bd;
 wire        ms_ex;
 wire [ 4:0] ms_excode;
 assign {
-        root_bus       ,  // 90:80
+        c0_bus       ,  // 90:80
         ws_bd          ,  // 79:79
         ms_ex          ,  // 78:78
         ms_excode      ,  // 77:73
@@ -53,8 +53,8 @@ assign {
 assign {ws_eret,   // 10:10
         ws_mtc0,   // 9:9
         ws_mfc0,   // 8:8
-        cp0r_addr  // 7:0
-       } = root_bus & {11{ws_valid}};
+        c0_raddr  // 7:0
+       } = c0_bus & {11{ws_valid}};
 wire [31:0] cp0_rdata;
 wire        eret_flush;
 assign eret_flush = ws_valid && ws_eret;
@@ -105,7 +105,7 @@ cp0_regfile u_cp0_regfile(
     .clk       (clk              ),
     .reset     (reset            ),
     .mtc0_we   (ws_mtc0 && !ws_ex),
-    .cp0r_addr (cp0r_addr        ),
+    .c0_raddr (c0_raddr        ),
     .c0_wdata  (ws_final_result  ),
     .wb_bd     (ws_bd            ),
     .wb_ex     (ws_ex            ),

@@ -532,7 +532,7 @@ assign branch_op= inst_beq || inst_bne || inst_bltz ||
                   inst_bgez|| inst_bgtz|| inst_blez ||
                   inst_bltzal || inst_bgezal;
 assign jump_op  = inst_jal || inst_jalr || inst_jr || inst_j;
-assign br_or_jump_op = branch_op || jump_op;
+assign br_or_jump_op = (branch_op || jump_op) & ds_valid;
 assign rs_eq_rt = (rs_value == rt_value);
 assign rs_ltz   = rs_value[31];
 assign rs_gtz   = !rs_value[31] & (|rs_value);
@@ -544,7 +544,7 @@ assign br_taken = (   inst_beq                  &&  rs_eq_rt
                    || inst_bgtz                 &&  rs_gtz
                    || inst_blez                 && !rs_gtz
                    || jump_op
-                  ) && ds_valid && !flush;
+                  ) && ds_valid;
 assign br_target =  branch_op             ? (fs_pc + {{14{imm[15]}}, imm[15:0], 2'b0}) :
                    (inst_jr  || inst_jalr)? rs_value                                   :
                    (inst_jal || inst_j)   ? {fs_pc[31:28], jidx[25:0], 2'b0}           :

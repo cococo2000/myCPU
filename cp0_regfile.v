@@ -164,7 +164,7 @@ always @(posedge |clk) begin
     else tick <= ~tick;
     if(mtc0_we && c0_addr==`CR_COUNT)
         c0_count <= c0_wdata;
-    else if(c0_wdata)
+    else if(tick)
         c0_count <= c0_count + 1'b1;
 end
 

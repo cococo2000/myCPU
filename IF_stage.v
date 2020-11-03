@@ -99,7 +99,7 @@ assign fs_inst         = inst_sram_rdata;
 wire   addr_error;
 assign addr_error  = (fs_pc[1:0] != 2'b0);
 assign fs_ex       = fs_valid && addr_error;
-assign fs_bd       = ds_br_or_jump_op;
+assign fs_bd       = ds_br_or_jump_op && !ws_eret;
 assign fs_excode   = {5{fs_ex}} & `EX_ADEL;
 
 endmodule

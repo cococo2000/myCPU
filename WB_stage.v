@@ -105,22 +105,26 @@ assign debug_wb_rf_wen   = rf_we;
 assign debug_wb_rf_wnum  = ws_dest;
 assign debug_wb_rf_wdata = rf_wdata;
 
+// int signals
+wire [5:0] ext_int_in;
+assign ext_int_in = 6'b0;
 // cp0_regfile
 cp0_regfile u_cp0_regfile(
-    .clk       (clk              ),
-    .reset     (reset            ),
-    .mtc0_we   (ws_mtc0 && !ws_ex),
-    .c0_raddr (c0_raddr        ),
-    .c0_wdata  (ws_final_result  ),
-    .wb_bd     (ws_bd            ),
-    .wb_ex     (ws_ex            ),
-    .wb_excode (ws_excode        ),
-    .eret_flush(eret_flush       ),
-    .wb_badvaddr(wb_badvaddr     ),
-    .wb_pc     (ws_pc            ),
-    .rdata     (cp0_rdata        ),
-    .c0_epc    (cp0_epc          ),
-    .has_int   (has_int)
+    .clk        (clk              ),
+    .reset      (reset            ),
+    .mtc0_we    (ws_mtc0 && !ws_ex),
+    .c0_raddr   (c0_raddr         ),
+    .c0_wdata   (ws_final_result  ),
+    .wb_bd      (ws_bd            ),
+    .wb_ex      (ws_ex            ),
+    .wb_excode  (ws_excode        ),
+    .eret_flush (eret_flush       ),
+    .wb_badvaddr(wb_badvaddr      ),
+    .wb_pc      (ws_pc            ),
+    .rdata      (cp0_rdata        ),
+    .c0_epc     (cp0_epc          ),
+    .ext_int_in (ext_int_in       ),
+    .has_int    (has_int          )
 );
 
 endmodule

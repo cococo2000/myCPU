@@ -3,18 +3,18 @@
 module mem_stage(
     input                          clk           ,
     input                          reset         ,
-    //allowin
+    // allowin
     input                          ws_allowin    ,
     output                         ms_allowin    ,
-    //from es
+    // from es
     input                          es_to_ms_valid,
     input  [`ES_TO_MS_BUS_WD -1:0] es_to_ms_bus  ,
-    //to ws
+    // to ws
     output                         ms_to_ws_valid,
     output [`MS_TO_WS_BUS_WD -1:0] ms_to_ws_bus  ,
-    //from data-sram
+    // from data-sram
     input  [31                 :0] data_sram_rdata,
-    //forward
+    // forward
     output [`MS_FWD_BUS_WD -1  :0] ms_fwd_bus    ,
     output                         ms_flush      ,
     input                          flush
@@ -62,8 +62,8 @@ assign ms_eret = ms_valid && c0_bus[10];
 assign ms_mfc0 = ms_valid && c0_bus[ 8];
 assign ms_flush = ms_valid && (ms_eret || ms_ex);
 assign ms_to_ws_bus = {
-                       ms_badvaddr  ,  // 122:91
-                       c0_bus       ,  // 90:80
+                       ms_badvaddr    ,  // 122:91
+                       c0_bus         ,  // 90:80
                        ms_bd          ,  // 79:79
                        ms_ex          ,  // 78:78
                        ms_excode      ,  // 77:73

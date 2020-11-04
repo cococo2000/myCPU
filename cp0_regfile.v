@@ -1,30 +1,26 @@
 `include "mycpu.h"
 
 module cp0_regfile(
-    input        clk       ,
-    input        reset     ,
-    input        mtc0_we   ,
-    input [ 7:0] c0_raddr ,
-    input [31:0] c0_wdata  ,
-    input        wb_bd     ,
-    input        wb_ex     ,
-    input [ 4:0] wb_excode ,
-    input        eret_flush,
-    input [31:0] wb_pc     ,
-    input [31:0] wb_badvaddr,
-    output[31:0] rdata     ,
-    output reg [31:0] c0_epc,
-    output       has_int
+    input             clk        ,
+    input             reset      ,
+    input             mtc0_we    ,
+    input      [ 7:0] c0_raddr   ,  // c0_raddr = {c0_addr, c0_sel}
+    input      [31:0] c0_wdata   ,
+    input             wb_bd      ,
+    input             wb_ex      ,
+    input      [ 4:0] wb_excode  ,
+    input             eret_flush ,
+    input      [31:0] wb_pc      ,
+    input      [31:0] wb_badvaddr,
+    input      [ 5:0] ext_int_in ,
+    output     [31:0] rdata      ,
+    output reg [31:0] c0_epc     ,
+    output            has_int
 );
 
-wire count_eq_compare;
-wire [ 5:0] ext_int_in;
+wire        count_eq_compare;
 wire [ 4:0] c0_addr;
 wire [ 2:0] c0_sel;
-
-
-// assign count_eq_compare = 1'b0;
-assign ext_int_in = 6'b0;
 assign {c0_addr, c0_sel} = c0_raddr;
 
 // CP0_STATUS
@@ -99,7 +95,7 @@ always @(posedge clk) begin
         c0_cause_ti <= 1'b0;
     else if(mtc0_we && c0_addr == `CR_COMPARE)
         c0_cause_ti <= 1'b0;
-    else if(count_eq_compare)  // not done, will done in lab9
+    else if(count_eq_compare)
         c0_cause_ti <= 1'b1;
 end
 // 29:16
@@ -186,6 +182,6 @@ assign rdata = (c0_addr == `CR_STATUS ) ? c0_status :
                32'b0;
 
 // wire has_int;
-assign has_int = (c0_cause_ip[7:0] & c0_status_im[7:0])!=8'h00 && c0_status_ie==1'b1 && c0_status_exl==1'b0;
+assign has_int = (c0_cause_ip[7:0] & c0_status_im[7:0]) != 8'h00 && c0_status_ie == 1'b1 && c0_status_exl == 1'b0;
 
 endmodule

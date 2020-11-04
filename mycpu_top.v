@@ -58,11 +58,11 @@ assign es_data_valid = !(flush || ms_flush || es_ex);
 if_stage if_stage(
     .clk            (clk            ),
     .reset          (reset          ),
-    //allowin
+    // allowin
     .ds_allowin     (ds_allowin     ),
-    //brbus
+    // brbus
     .br_bus         (br_bus         ),
-    //outputs
+    // outputs
     .fs_to_ds_valid (fs_to_ds_valid ),
     .fs_to_ds_bus   (fs_to_ds_bus   ),
     // inst sram interface
@@ -80,20 +80,20 @@ if_stage if_stage(
 id_stage id_stage(
     .clk            (clk            ),
     .reset          (reset          ),
-    //allowin
+    // allowin
     .es_allowin     (es_allowin     ),
     .ds_allowin     (ds_allowin     ),
-    //from fs
+    // from fs
     .fs_to_ds_valid (fs_to_ds_valid ),
     .fs_to_ds_bus   (fs_to_ds_bus   ),
-    //to es
+    // to es
     .ds_to_es_valid (ds_to_es_valid ),
     .ds_to_es_bus   (ds_to_es_bus   ),
-    //to fs
+    // to fs
     .br_bus         (br_bus         ),
-    //to rf: for write back
+    // to rf: for write back
     .ws_to_rf_bus   (ws_to_rf_bus   ),
-    //forward_bus
+    // forward_bus
     .es_fwd_bus     (es_fwd_bus     ),
     .ms_fwd_bus     (ms_fwd_bus     ),
     .flush          (flush          ),
@@ -103,13 +103,13 @@ id_stage id_stage(
 exe_stage exe_stage(
     .clk            (clk            ),
     .reset          (reset          ),
-    //allowin
+    // allowin
     .ms_allowin     (ms_allowin     ),
     .es_allowin     (es_allowin     ),
-    //from ds
+    // from ds
     .ds_to_es_valid (ds_to_es_valid ),
     .ds_to_es_bus   (ds_to_es_bus   ),
-    //to ms
+    // to ms
     .es_to_ms_valid (es_to_ms_valid ),
     .es_to_ms_bus   (es_to_ms_bus   ),
     // data sram interface
@@ -117,7 +117,7 @@ exe_stage exe_stage(
     .data_sram_wen  (data_sram_wen  ),
     .data_sram_addr (data_sram_addr ),
     .data_sram_wdata(data_sram_wdata),
-    //forward_bus
+    // forward_bus
     .es_fwd_bus     (es_fwd_bus     ),
     .es_data_valid  (es_data_valid  ),
     .es_ex          (es_ex          ),
@@ -127,18 +127,18 @@ exe_stage exe_stage(
 mem_stage mem_stage(
     .clk            (clk            ),
     .reset          (reset          ),
-    //allowin
+    // allowin
     .ws_allowin     (ws_allowin     ),
     .ms_allowin     (ms_allowin     ),
-    //from es
+    // from es
     .es_to_ms_valid (es_to_ms_valid ),
     .es_to_ms_bus   (es_to_ms_bus   ),
-    //to ws
+    // to ws
     .ms_to_ws_valid (ms_to_ws_valid ),
     .ms_to_ws_bus   (ms_to_ws_bus   ),
-    //from data-sram
+    // from data-sram
     .data_sram_rdata(data_sram_rdata),
-    //forward_bus
+    // forward_bus
     .ms_fwd_bus     (ms_fwd_bus     ),
     .ms_flush       (ms_flush       ),
     .flush          (flush          )
@@ -147,14 +147,14 @@ mem_stage mem_stage(
 wb_stage wb_stage(
     .clk            (clk            ),
     .reset          (reset          ),
-    //allowin
+    // allowin
     .ws_allowin     (ws_allowin     ),
-    //from ms
+    // from ms
     .ms_to_ws_valid (ms_to_ws_valid ),
     .ms_to_ws_bus   (ms_to_ws_bus   ),
-    //to rf: for write back and forward bus (to ds)
+    // to rf: for write back and forward bus (to ds)
     .ws_to_rf_bus   (ws_to_rf_bus   ),
-    //trace debug interface
+    // trace debug interface
     .debug_wb_pc      (debug_wb_pc      ),
     .debug_wb_rf_wen  (debug_wb_rf_wen  ),
     .debug_wb_rf_wnum (debug_wb_rf_wnum ),

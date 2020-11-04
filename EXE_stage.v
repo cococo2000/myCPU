@@ -3,13 +3,13 @@
 module exe_stage(
     input                          clk           ,
     input                          reset         ,
-    //allowin
+    // allowin
     input                          ms_allowin    ,
     output                         es_allowin    ,
-    //from ds
+    // from ds
     input                          ds_to_es_valid,
     input  [`DS_TO_ES_BUS_WD -1:0] ds_to_es_bus  ,
-    //to ms
+    // to ms
     output                         es_to_ms_valid,
     output [`ES_TO_MS_BUS_WD -1:0] es_to_ms_bus  ,
     // data sram interface

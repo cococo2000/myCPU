@@ -6,18 +6,18 @@ module alu(
   output        overflow
 );
 
-wire op_add;   //加法操作
-wire op_sub;   //减法操作
-wire op_slt;   //有符号比较，小于置位
-wire op_sltu;  //无符号比较，小于置位
-wire op_and;   //按位与
-wire op_nor;   //按位或非
-wire op_or;    //按位或
-wire op_xor;   //按位异或
-wire op_sll;   //逻辑左移
-wire op_srl;   //逻辑右移
-wire op_sra;   //算术右移
-wire op_lui;   //立即数置于高半部分
+wire op_add;   // 加法操作
+wire op_sub;   // 减法操作
+wire op_slt;   // 有符号比较，小于置位
+wire op_sltu;  // 无符号比较，小于置位
+wire op_and;   // 按位与
+wire op_nor;   // 按位或非
+wire op_or;    // 按位或
+wire op_xor;   // 按位异或
+wire op_sll;   // 逻辑左移
+wire op_srl;   // 逻辑右移
+wire op_sra;   // 算术右移
+wire op_lui;   // 立即数置于高半部分
 
 // control code decomposition
 assign op_add  = alu_op[ 0];

@@ -3,11 +3,11 @@
 module if_stage(
     input                          clk            ,
     input                          reset          ,
-    //allwoin
+    // allwoin
     input                          ds_allowin     ,
-    //brbus
+    // br_bus
     input  [`BR_BUS_WD       -1:0] br_bus         ,
-    //to ds
+    // to ds
     output                         fs_to_ds_valid ,
     output [`FS_TO_DS_BUS_WD -1:0] fs_to_ds_bus   ,
     // inst sram interface

@@ -20,18 +20,18 @@ module cp0_regfile(
 
 wire        count_eq_compare;
 wire [ 4:0] c0_addr;
-wire [ 2:0] c0_sel;
+wire [ 2:0] c0_sel ;
 assign {c0_addr, c0_sel} = c0_raddr;
 
 // CP0_STATUS
-wire [31:0] c0_status;
+wire [31:0] c0_status      ;
 wire [ 8:0] c0_status_31_23;
-wire        c0_status_bev;
+wire        c0_status_bev  ;
 wire [ 5:0] c0_status_21_16;
-reg  [ 7:0] c0_status_im;
-wire [ 5:0] c0_status_7_2;
-reg         c0_status_exl;
-reg         c0_status_ie;
+reg  [ 7:0] c0_status_im   ;
+wire [ 5:0] c0_status_7_2  ;
+reg         c0_status_exl  ;
+reg         c0_status_ie   ;
 // 31:23
 assign c0_status_31_23 = 9'b0;
 // 22:22
@@ -75,13 +75,13 @@ assign c0_status = {c0_status_31_23,    // 31:23
 // CP0_CAUSE
 wire [31:0] c0_cause;
 
-reg         c0_cause_bd;
-reg         c0_cause_ti;
-wire [13:0] c0_cause_29_16;
-reg  [7 :0] c0_cause_ip;
-wire        c0_cause_7;
+reg         c0_cause_bd    ;
+reg         c0_cause_ti    ;
+wire [13:0] c0_cause_29_16 ;
+reg  [7 :0] c0_cause_ip    ;
+wire        c0_cause_7     ;
 reg  [4 :0] c0_cause_excode;
-wire [1 :0] c0_cause_1_0;
+wire [1 :0] c0_cause_1_0   ;
 // 31:31
 always @(posedge clk) begin
     if(reset)
@@ -117,7 +117,7 @@ always @(posedge clk) begin
         c0_cause_ip[1:0] <= c0_wdata[9:8];
 end
 // 7:7
-assign c0_cause_7     = 1'b0;
+assign c0_cause_7 = 1'b0;
 // 6:2
 always @(posedge clk) begin
     if(reset)
@@ -126,7 +126,7 @@ always @(posedge clk) begin
         c0_cause_excode <= wb_excode;
 end
 // 1:0
-assign c0_cause_1_0   = 2'b0;
+assign c0_cause_1_0 = 2'b0;
 assign c0_cause = { c0_cause_bd    ,    // 31:31
                     c0_cause_ti    ,    // 30:30
                     c0_cause_29_16 ,    // 29;16
@@ -146,7 +146,7 @@ end
 
 // CP0_BadVAddr
 reg [31: 0] c0_badvaddr;
-always @(posedge |clk) begin
+always @(posedge clk) begin
     if (wb_ex && (wb_excode == `EX_ADEL || wb_excode == `EX_ADES))
         c0_badvaddr <= wb_badvaddr;
 end
@@ -154,7 +154,7 @@ end
 // CP0_COUNT
 reg tick;
 reg [31:0] c0_count;
-always @(posedge |clk) begin
+always @(posedge clk) begin
     if(reset || (mtc0_we && c0_addr == `CR_COMPARE)) 
         tick <= 1'b0;
     else tick <= ~tick;
@@ -164,8 +164,9 @@ always @(posedge |clk) begin
         c0_count <= c0_count + 1'b1;
 end
 
+// CP0_COMPARE
 reg [31:0] c0_compare;
-always @(posedge |clk) begin
+always @(posedge clk) begin
     if(reset)
         c0_compare = 32'b0;
     else if(mtc0_we && c0_addr == `CR_COMPARE)
@@ -174,10 +175,10 @@ end
 
 assign count_eq_compare = c0_compare == c0_count;
 // read data
-assign rdata = (c0_addr == `CR_STATUS ) ? c0_status :
-               (c0_addr == `CR_CAUSE  ) ? c0_cause  :
-               (c0_addr == `CR_EPC    ) ? c0_epc    :
-               (c0_addr == `CR_COMPARE) ? c0_compare:
+assign rdata = (c0_addr == `CR_STATUS ) ? c0_status  :
+               (c0_addr == `CR_CAUSE  ) ? c0_cause   :
+               (c0_addr == `CR_EPC    ) ? c0_epc     :
+               (c0_addr == `CR_COMPARE) ? c0_compare :
                (c0_addr == `CR_BADVADDR)? c0_badvaddr:
                32'b0;
 

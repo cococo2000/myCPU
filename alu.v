@@ -1,7 +1,7 @@
 module alu(
-  input  [11:0] alu_op,
-  input  [31:0] alu_src1,
-  input  [31:0] alu_src2,
+  input  [11:0] alu_op    ,
+  input  [31:0] alu_src1  ,
+  input  [31:0] alu_src2  ,
   output [31:0] alu_result,
   output        overflow
 );
@@ -34,24 +34,24 @@ assign op_sra  = alu_op[10];
 assign op_lui  = alu_op[11];
 
 wire [31:0] add_sub_result; 
-wire [31:0] slt_result; 
-wire [31:0] sltu_result;
-wire [31:0] and_result;
-wire [31:0] nor_result;
-wire [31:0] or_result;
-wire [31:0] xor_result;
-wire [31:0] lui_result;
-wire [31:0] sll_result; 
-wire [63:0] sr64_result; 
-wire [31:0] sr_result; 
+wire [31:0] slt_result    ;
+wire [31:0] sltu_result   ;
+wire [31:0] and_result    ;
+wire [31:0] nor_result    ;
+wire [31:0] or_result     ;
+wire [31:0] xor_result    ;
+wire [31:0] lui_result    ;
+wire [31:0] sll_result    ;
+wire [63:0] sr64_result   ;
+wire [31:0] sr_result     ;
 
 
 // 32-bit adder
-wire [31:0] adder_a;
-wire [31:0] adder_b;
-wire        adder_cin;
+wire [31:0] adder_a     ;
+wire [31:0] adder_b     ;
+wire        adder_cin   ;
 wire [31:0] adder_result;
-wire        adder_cout;
+wire        adder_cout  ;
 
 assign adder_a   = alu_src1;
 assign adder_b   = (op_sub | op_slt | op_sltu) ? ~alu_src2 : alu_src2;
@@ -87,15 +87,15 @@ assign sr_result   = sr64_result[31:0];
 
 // final result mux
 assign alu_result = ({32{op_add|op_sub}} & add_sub_result)
-                  | ({32{op_slt       }} & slt_result)
-                  | ({32{op_sltu      }} & sltu_result)
-                  | ({32{op_and       }} & and_result)
-                  | ({32{op_nor       }} & nor_result)
-                  | ({32{op_or        }} & or_result)
-                  | ({32{op_xor       }} & xor_result)
-                  | ({32{op_lui       }} & lui_result)
-                  | ({32{op_sll       }} & sll_result)
-                  | ({32{op_srl|op_sra}} & sr_result);
+                  | ({32{op_slt       }} & slt_result    )
+                  | ({32{op_sltu      }} & sltu_result   )
+                  | ({32{op_and       }} & and_result    )
+                  | ({32{op_nor       }} & nor_result    )
+                  | ({32{op_or        }} & or_result     )
+                  | ({32{op_xor       }} & xor_result    )
+                  | ({32{op_lui       }} & lui_result    )
+                  | ({32{op_sll       }} & sll_result    )
+                  | ({32{op_srl|op_sra}} & sr_result     );
 
 assign overflow   = (op_add & ~(alu_src1[31]) & ~(alu_src2[31]) &  add_sub_result[31])
                   | (op_add &  (alu_src1[31]) &  (alu_src2[31]) & ~add_sub_result[31])

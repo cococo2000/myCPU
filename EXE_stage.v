@@ -29,25 +29,25 @@ reg         es_valid      ;
 wire        es_ready_go   ;
 
 reg  [`DS_TO_ES_BUS_WD -1:0] ds_to_es_bus_r;
-wire [11:0] es_alu_op     ;
-wire        es_load_op    ;
-wire        es_src1_is_sa ;
-wire        es_src1_is_pc ;
-wire        es_src2_is_imm;
+wire [11:0] es_alu_op      ;
+wire        es_load_op     ;
+wire        es_src1_is_sa  ;
+wire        es_src1_is_pc  ;
+wire        es_src2_is_imm ;
 wire        es_src2_is_uimm;
-wire        es_src2_is_8  ;
-wire        es_gr_we      ;
-wire [ 4:0] es_st_inst    ;
-wire [ 6:0] es_ld_inst    ;
-wire [ 7:0] es_md_inst    ;
-wire [ 4:0] es_dest       ;
-wire [15:0] es_imm        ;
-wire [31:0] es_rs_value   ;
-wire [31:0] es_rt_value   ;
-wire [31:0] es_pc         ;
+wire        es_src2_is_8   ;
+wire        es_gr_we       ;
+wire [ 4:0] es_st_inst     ;
+wire [ 6:0] es_ld_inst     ;
+wire [ 7:0] es_md_inst     ;
+wire [ 4:0] es_dest        ;
+wire [15:0] es_imm         ;
+wire [31:0] es_rs_value    ;
+wire [31:0] es_rt_value    ;
+wire [31:0] es_pc          ;
 
 // exception
-wire [10:0] c0_bus        ;
+wire [10:0] c0_bus          ;
 wire        es_mtc0         ;
 wire        es_mfc0         ;
 wire        es_bd           ;
@@ -64,7 +64,7 @@ wire [31: 0]ds_badvaddr     ;
 wire [31: 0]es_badvaddr     ;
 assign {
         ds_badvaddr     , //206:175
-        c0_bus        , // 174:164
+        c0_bus          , // 174:164
         es_bd           , // 163:163
         ds_ex           , // 162:162
         ds_excode       , // 161:157
@@ -191,10 +191,10 @@ wire inst_sb;
 wire inst_swl;
 wire inst_swr;
 
-assign {inst_sw , 
-        inst_sh , 
-        inst_sb , 
-        inst_swl, 
+assign {inst_sw ,
+        inst_sh ,
+        inst_sb ,
+        inst_swl,
         inst_swr
         } = es_st_inst;
 

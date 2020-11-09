@@ -348,5 +348,6 @@ assign es_excode = ({5{es_ex}} &
                           : (({5{es_overflow}}      & `EX_OV  ) |
                              ({5{es_ld_addr_error}} & `EX_ADEL) |
                              ({5{es_st_addr_error}} & `EX_ADES)) ));
-assign es_badvaddr = {32{es_ex}} & (ds_ex ? ds_badvaddr : es_alu_result);
+assign es_badvaddr = {32{es_valid && (ds_ex || es_ld_addr_error || es_st_addr_error)}}
+                   & (ds_ex ? ds_badvaddr : es_alu_result);
 endmodule

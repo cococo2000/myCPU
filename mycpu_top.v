@@ -2,18 +2,39 @@
 module mycpu_top(
     input         clk,
     input         resetn,
+
     // inst sram interface
-    output        inst_sram_en,
-    output [ 3:0] inst_sram_wen,
+    // output        inst_sram_en,
+    // output [ 3:0] inst_sram_wen,
+    // output [31:0] inst_sram_addr,
+    // output [31:0] inst_sram_wdata,
+    // input  [31:0] inst_sram_rdata,
+    output        inst_sram_req,
+    output        inst_sram_wr,
+    output [ 1:0] inst_sram_size,
+    output [ 3:0] inst_sram_wstrb,
     output [31:0] inst_sram_addr,
     output [31:0] inst_sram_wdata,
+    input         inst_sram_addr_ok,
+    input         inst_sram_data_ok,
     input  [31:0] inst_sram_rdata,
+
     // data sram interface
-    output        data_sram_en,
-    output [ 3:0] data_sram_wen,
+    // output        data_sram_en,
+    // output [ 3:0] data_sram_wen,
+    // output [31:0] data_sram_addr,
+    // output [31:0] data_sram_wdata,
+    // input  [31:0] data_sram_rdata,
+    output        data_sram_req,
+    output        data_sram_wr,
+    output [ 1:0] data_sram_size,
+    output [ 3:0] data_sram_wstrb,
     output [31:0] data_sram_addr,
     output [31:0] data_sram_wdata,
+    input         data_sram_addr_ok,
+    input         data_sram_data_ok,
     input  [31:0] data_sram_rdata,
+
     // trace debug interface
     output [31:0] debug_wb_pc,
     output [ 3:0] debug_wb_rf_wen,
@@ -56,25 +77,34 @@ assign es_data_valid = !(flush || ms_flush || es_ex);
 
 // IF stage
 if_stage if_stage(
-    .clk            (clk            ),
-    .reset          (reset          ),
+    .clk              (clk              ),
+    .reset            (reset            ),
     // allowin
-    .ds_allowin     (ds_allowin     ),
+    .ds_allowin       (ds_allowin       ),
     // brbus
-    .br_bus         (br_bus         ),
+    .br_bus           (br_bus           ),
     // outputs
-    .fs_to_ds_valid (fs_to_ds_valid ),
-    .fs_to_ds_bus   (fs_to_ds_bus   ),
+    .fs_to_ds_valid   (fs_to_ds_valid   ),
+    .fs_to_ds_bus     (fs_to_ds_bus     ),
     // inst sram interface
-    .inst_sram_en   (inst_sram_en   ),
-    .inst_sram_wen  (inst_sram_wen  ),
-    .inst_sram_addr (inst_sram_addr ),
-    .inst_sram_wdata(inst_sram_wdata),
-    .inst_sram_rdata(inst_sram_rdata),
+    // .inst_sram_en   (inst_sram_en   ),
+    // .inst_sram_wen  (inst_sram_wen  ),
+    // .inst_sram_addr (inst_sram_addr ),
+    // .inst_sram_wdata(inst_sram_wdata),
+    // .inst_sram_rdata(inst_sram_rdata),
+    .inst_sram_req    (inst_sram_req    ),
+    .inst_sram_wr     (inst_sram_wr     ),
+    .inst_sram_size   (inst_sram_size   ),
+    .inst_sram_wstrb  (inst_sram_wstrb  ),
+    .inst_sram_addr   (inst_sram_addr   ),
+    .inst_sram_wdata  (inst_sram_wdata  ),
+    .inst_sram_addr_ok(inst_sram_addr_ok),
+    .inst_sram_data_ok(inst_sram_data_ok),
+    .inst_sram_rdata  (inst_sram_rdata  ),
 
-    .cp0_epc        (cp0_epc        ),
-    .ws_eret        (ws_eret        ),
-    .ws_ex          (ws_ex          )
+    .cp0_epc          (cp0_epc          ),
+    .ws_eret          (ws_eret          ),
+    .ws_ex            (ws_ex            )
 );
 // ID stage
 id_stage id_stage(
@@ -113,10 +143,17 @@ exe_stage exe_stage(
     .es_to_ms_valid (es_to_ms_valid ),
     .es_to_ms_bus   (es_to_ms_bus   ),
     // data sram interface
-    .data_sram_en   (data_sram_en   ),
-    .data_sram_wen  (data_sram_wen  ),
-    .data_sram_addr (data_sram_addr ),
-    .data_sram_wdata(data_sram_wdata),
+    // .data_sram_en   (data_sram_en   ),
+    // .data_sram_wen  (data_sram_wen  ),
+    // .data_sram_addr (data_sram_addr ),
+    // .data_sram_wdata(data_sram_wdata),
+    .data_sram_req    (cpu_data_req    ),
+    .data_sram_wr     (cpu_data_wr     ),
+    .data_sram_size   (cpu_data_size   ),
+    .data_sram_wstrb  (cpu_data_wstrb  ),
+    .data_sram_addr   (cpu_data_addr   ),
+    .data_sram_wdata  (cpu_data_wdata  ),
+    .data_sram_addr_ok(cpu_data_addr_ok),
     // forward_bus
     .es_fwd_bus     (es_fwd_bus     ),
     .es_data_valid  (es_data_valid  ),
@@ -137,7 +174,9 @@ mem_stage mem_stage(
     .ms_to_ws_valid (ms_to_ws_valid ),
     .ms_to_ws_bus   (ms_to_ws_bus   ),
     // from data-sram
-    .data_sram_rdata(data_sram_rdata),
+    // .data_sram_rdata(data_sram_rdata),
+    .data_sram_data_ok(cpu_data_data_ok),
+    .data_sram_rdata  (cpu_data_rdata  ),
     // forward_bus
     .ms_fwd_bus     (ms_fwd_bus     ),
     .ms_flush       (ms_flush       ),

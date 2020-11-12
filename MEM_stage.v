@@ -13,6 +13,8 @@ module mem_stage(
     output                         ms_to_ws_valid,
     output [`MS_TO_WS_BUS_WD -1:0] ms_to_ws_bus  ,
     // from data-sram
+    // input  [31                 :0] data_sram_rdata,
+    input                          data_sram_data_ok,
     input  [31                 :0] data_sram_rdata,
     // forward
     output [`MS_FWD_BUS_WD -1  :0] ms_fwd_bus    ,

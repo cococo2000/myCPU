@@ -13,10 +13,17 @@ module exe_stage(
     output                         es_to_ms_valid,
     output [`ES_TO_MS_BUS_WD -1:0] es_to_ms_bus  ,
     // data sram interface
-    output        data_sram_en   ,
-    output [ 3:0] data_sram_wen  ,
-    output [31:0] data_sram_addr ,
+    // output        data_sram_en   ,
+    // output [ 3:0] data_sram_wen  ,
+    // output [31:0] data_sram_addr ,
+    // output [31:0] data_sram_wdata,
+    output        data_sram_req,
+    output        data_sram_wr,
+    output [ 1:0] data_sram_size,
+    output [ 3:0] data_sram_wstrb,
+    output [31:0] data_sram_addr,
     output [31:0] data_sram_wdata,
+    input         data_sram_addr_ok,
     // forward
     output [`ES_FWD_BUS_WD -1:0]   es_fwd_bus,
 

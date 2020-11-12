@@ -244,15 +244,40 @@ assign {inst_lw     ,
        } = es_ld_inst;
 assign es_ld_addr_error = (inst_lw & (mem_pos != 2'b00))         // lw
                        || ((inst_lh || inst_lhu) & mem_pos[0]);  // lhu & lh
-assign data_sram_en   = 1'b1;
-assign data_sram_wen  = {4{es_valid && es_data_valid}} & (
+
+// data sram
+// assign data_sram_en   = 1'b1;
+// assign data_sram_wen  = {4{es_valid && es_data_valid}} & (
+//                         inst_sw ?  4'hf                                                                :
+//                         inst_sh ? {                 {2{mem_pos[1]}},                 {2{~mem_pos[1]}}} :
+//                         inst_sb ? {mem_pos == 2'd3, mem_pos == 2'd2, mem_pos == 2'd1, mem_pos == 2'd0} :
+//                         inst_swl? {mem_pos == 2'd3, mem_pos[1]     , mem_pos!=2'd0  , 1'b1           } :
+//                         inst_swr? {1'b1           , mem_pos != 2'd3, !mem_pos[1]    , mem_pos == 2'd0} :
+//                                    4'b0);
+// assign data_sram_addr  = {es_alu_result[31: 2], 2'b0};
+// assign data_sram_wdata = st_data;
+
+wire data_size_is_two;
+wire data_size_is_one;
+assign data_size_is_two = inst_sw  || inst_lw  ||
+                        ((inst_lwl || inst_swl) && (mem_pos == 2'd2 || mem_pos == 2'd3)) ||
+                        ((inst_lwr || inst_swr) && (mem_pos == 2'd0 || mem_pos == 2'd1));
+assign data_size_is_one = inst_lh  || inst_sh  || inst_lhu ||
+                        ((inst_lwl || inst_swl) && mem_pos == 2'd1) ||
+                        ((inst_lwr || inst_swr) && mem_pos == 2'd2);
+assign data_sram_req = (|es_ld_inst) || (|es_st_inst); // TODO
+assign data_sram_wr = (|data_sram_wstrb);
+assign data_sram_size = data_size_is_two ? 2'd2 :
+                        data_size_is_one ? 2'd1 :
+                                           2'd0 ;
+assign data_sram_wstrb = {4{es_valid && es_data_valid}} & (
                         inst_sw ?  4'hf                                                                :
                         inst_sh ? {                 {2{mem_pos[1]}},                 {2{~mem_pos[1]}}} :
                         inst_sb ? {mem_pos == 2'd3, mem_pos == 2'd2, mem_pos == 2'd1, mem_pos == 2'd0} :
                         inst_swl? {mem_pos == 2'd3, mem_pos[1]     , mem_pos!=2'd0  , 1'b1           } :
                         inst_swr? {1'b1           , mem_pos != 2'd3, !mem_pos[1]    , mem_pos == 2'd0} :
                                    4'b0);
-assign data_sram_addr  = {es_alu_result[31: 2], 2'b0};
+assign data_sram_addr = {es_alu_result[31: 2], {2{~inst_lwl & ~inst_swl}} & es_alu_result[1:0]};
 assign data_sram_wdata = st_data;
 
 // es forward bus

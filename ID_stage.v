@@ -169,6 +169,7 @@ wire [31:0] es_res;
 wire [ 4:0] es_dest;
 // ms forward bus
 wire        ms_mfc0;
+wire        ms_load;
 wire        ms_block_valid;
 wire [ 3:0] ms_rf_we;
 wire [31:0] ms_res;
@@ -442,7 +443,8 @@ assign {es_mfc0       , // 39:39
         es_res          // 31:0
        } = es_fwd_bus;
 // ms forward bus
-assign {ms_mfc0       , // 42:42
+assign {ms_mfc0       , // 43:43
+        ms_load       , // 42:42
         ms_rf_we      , // 41:38
         ms_block_valid, // 37:37
         ms_dest       , // 36:32
@@ -497,7 +499,7 @@ assign rt_ms_fwd_valid = rt_eq_ms_dest && !ms_mfc0;
 assign rt_ws_fwd_valid = rt_eq_rf_waddr;
 
 assign blocked = ((es_load || es_mfc0) && (rs_eq_es_dest || rt_eq_es_dest)) || 
-                 ( ms_mfc0             && (rs_eq_ms_dest || rt_eq_ms_dest));
+                 ((ms_load || ms_mfc0) && (rs_eq_ms_dest || rt_eq_ms_dest));
 
 assign ms_wdata_rs = {{ms_rf_we[3] ?   ms_res[31:24] : (rs_ws_fwd_valid ? {8{rf_we[3]}} & rf_wdata_rs[31:24] : rf_rdata1[31:24])},
                       {ms_rf_we[2] ?   ms_res[23:16] : (rs_ws_fwd_valid ? {8{rf_we[3]}} & rf_wdata_rs[23:16] : rf_rdata1[23:16])},

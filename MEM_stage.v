@@ -24,6 +24,7 @@ module mem_stage(
 
 reg         ms_valid;
 wire        ms_ready_go;
+reg [31:0] data_sram_rdata_r;
 
 reg [`ES_TO_MS_BUS_WD -1:0] es_to_ms_bus_r;
 wire        ms_res_from_mem;
@@ -31,6 +32,7 @@ wire        ms_gr_we;
 wire [ 4:0] ms_dest;
 wire [31:0] ms_alu_result;
 wire [31:0] ms_pc;
+wire        ms_store_op;
 wire [ 6:0] ms_ld_inst;
 wire [ 3:0] ms_rf_we;
 // exception
@@ -41,6 +43,7 @@ wire [ 4:0] es_excode;
 wire [31:0] ms_badvaddr;
 wire [31:0] es_badvaddr;
 assign {
+        ms_store_op    ,  // 128:128
         es_badvaddr    ,  // 127:96
         c0_bus         ,  // 95:85
         ms_bd          ,  // 84:84
@@ -75,8 +78,19 @@ assign ms_to_ws_bus = {
                        ms_pc             // 31:0
                       };
 
-
-assign ms_ready_go    = 1'b1;
+reg ms_ready_go_r;
+always @(posedge clk) begin
+    if (reset) begin
+        ms_ready_go_r <= 1'b0;
+    end
+    else if (data_sram_data_ok || ms_ex || flush) begin
+        ms_ready_go_r <= 1'b1;
+    end
+    else if (ms_to_ws_valid && ws_allowin) begin
+        ms_ready_go_r <= 1'b0;
+    end
+end
+assign ms_ready_go    = !(ms_store_op || ms_res_from_mem) || ms_ready_go_r;
 assign ms_allowin     = !ms_valid || ms_ready_go && ws_allowin;
 assign ms_to_ws_valid = ms_valid && ms_ready_go && !flush;
 always @(posedge clk) begin
@@ -120,39 +134,48 @@ wire [15:0] lh_data;
 wire [31:0] lwl_data;
 wire [31:0] lwr_data;
 
-assign lb_data      = mem_pos == 2'd0 ? data_sram_rdata [ 7: 0]         :
-                      mem_pos == 2'd1 ? data_sram_rdata [15: 8]         :
-                      mem_pos == 2'd2 ? data_sram_rdata [23:16]         :
-                   /* mem_pos == 2'd3 */data_sram_rdata [31:24];
+assign lb_data      = mem_pos == 2'd0 ? data_sram_rdata_r[ 7: 0]         :
+                      mem_pos == 2'd1 ? data_sram_rdata_r[15: 8]         :
+                      mem_pos == 2'd2 ? data_sram_rdata_r[23:16]         :
+                   /* mem_pos == 2'd3 */data_sram_rdata_r[31:24];
 
-assign lh_data      = mem_pos == 2'd0 ? data_sram_rdata [15: 0]         :
-                                        data_sram_rdata [31:16];
+assign lh_data      = mem_pos == 2'd0 ? data_sram_rdata_r[15: 0]         :
+                                        data_sram_rdata_r[31:16];
 
-assign lwl_data     = mem_pos == 2'd0 ? {data_sram_rdata[ 7: 0], 24'b0} :
-                      mem_pos == 2'd1 ? {data_sram_rdata[15: 0], 16'b0} :
-                      mem_pos == 2'd2 ? {data_sram_rdata[23: 0],  8'b0} :
-                      data_sram_rdata;
+assign lwl_data     = mem_pos == 2'd0 ? {data_sram_rdata_r[ 7: 0], 24'b0} :
+                      mem_pos == 2'd1 ? {data_sram_rdata_r[15: 0], 16'b0} :
+                      mem_pos == 2'd2 ? {data_sram_rdata_r[23: 0],  8'b0} :
+                                        data_sram_rdata_r;
 
-assign lwr_data     = mem_pos == 2'd3 ? {24'b0, data_sram_rdata[31:24]} :
-                      mem_pos == 2'd2 ? {16'b0, data_sram_rdata[31:16]} :
-                      mem_pos == 2'd1 ? { 8'b0, data_sram_rdata[31: 8]} :
-                      data_sram_rdata;
+assign lwr_data     = mem_pos == 2'd3 ? {24'b0, data_sram_rdata_r[31:24]} :
+                      mem_pos == 2'd2 ? {16'b0, data_sram_rdata_r[31:16]} :
+                      mem_pos == 2'd1 ? { 8'b0, data_sram_rdata_r[31: 8]} :
+                                        data_sram_rdata_r;
 assign mem_result   = inst_lb ? {{24{lb_data[ 7]}}, lb_data}:
                       inst_lbu? { 24'b0           , lb_data}:
                       inst_lh ? {{16{lh_data[15]}}, lh_data}:
                       inst_lhu? { 16'b0           , lh_data}:
                       inst_lwl? lwl_data                    :
                       inst_lwr? lwr_data                    :
-                                data_sram_rdata;
+                                data_sram_rdata_r;
 assign ms_final_result = ms_res_from_mem ? mem_result   :
                                            ms_alu_result;
+always @(posedge clk) begin
+    if (reset) begin
+        data_sram_rdata_r <= 32'b0;
+    end
+    else if (data_sram_data_ok)begin
+        data_sram_rdata_r <= data_sram_rdata;
+    end
+end
 
 // ms forward bus
 wire ms_block;
 wire ms_block_valid;
 assign ms_block = ms_gr_we;
 assign ms_block_valid = ms_block && ms_valid;
-assign ms_fwd_bus = {ms_valid && ms_mfc0,// 42:42
+assign ms_fwd_bus = {ms_valid && ms_mfc0,// 43:43
+                     ms_valid && ms_res_from_mem,// 42:42
                      ms_rf_we       ,    // 41:38
                      ms_block_valid ,    // 37:37
                      ms_dest        ,    // 36:32

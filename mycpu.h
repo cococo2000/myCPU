@@ -4,11 +4,11 @@
     `define BR_BUS_WD       35
     `define FS_TO_DS_BUS_WD 71
     `define DS_TO_ES_BUS_WD 207
-    `define ES_TO_MS_BUS_WD 128
+    `define ES_TO_MS_BUS_WD 129
     `define MS_TO_WS_BUS_WD 123
     `define WS_TO_RF_BUS_WD 41
     `define ES_FWD_BUS_WD   40
-    `define MS_FWD_BUS_WD   43
+    `define MS_FWD_BUS_WD   44
     // cp0_reg
     `define CR_BADVADDR     8
     `define CR_COUNT        9

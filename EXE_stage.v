@@ -37,6 +37,7 @@ wire        es_ready_go   ;
 
 reg  [`DS_TO_ES_BUS_WD -1:0] ds_to_es_bus_r;
 wire [11:0] es_alu_op      ;
+wire        es_store_op    ;
 wire        es_load_op     ;
 wire        es_src1_is_sa  ;
 wire        es_src1_is_pc  ;
@@ -140,6 +141,8 @@ wire divu_divisor_ready;
 wire divu_dividend_ready;
 wire divu_done;
 
+assign es_store_op = |es_st_inst;
+
 assign es_res = es_mfhi ? hi :
                 es_mflo ? lo :
                 es_mtc0 ? es_rt_value :
@@ -147,8 +150,9 @@ assign es_res = es_mfhi ? hi :
 assign es_overflow = es_alu_overflow && es_overflow_inst;
 assign es_res_from_mem = es_load_op;
 assign es_to_ms_bus = {
-                       es_badvaddr    ,  //127:96
-                       c0_bus       ,  // 95:85
+                       es_store_op    ,  // 128:128
+                       es_badvaddr    ,  // 127:96
+                       c0_bus         ,  // 95:85
                        es_bd          ,  // 84:84
                        es_ex          ,  // 83:83
                        es_excode      ,  // 82:78
@@ -160,7 +164,23 @@ assign es_to_ms_bus = {
                        es_pc             // 31:0
                       };
 
-assign es_ready_go    = !(es_div || es_divu) || (es_div && div_done) || (es_divu && divu_done) || !es_data_valid;
+reg es_ready_go_r;
+always @(posedge clk) begin
+    if (reset) begin
+        es_ready_go_r <= 1'b0;
+    end
+    else if (data_sram_req && data_sram_addr_ok)begin
+        es_ready_go_r <= 1'b1;
+    end
+    else if (es_to_ms_valid && ms_allowin) begin
+        es_ready_go_r <= 1'b0;
+    end
+end
+
+assign es_ready_go    = !(es_div || es_divu || es_load_op || es_store_op) ||
+                         (es_div && div_done) || (es_divu && divu_done) ||
+                         ((es_load_op || es_store_op) && es_ready_go_r) ||
+                         !es_data_valid;
 assign es_allowin     = !es_valid || es_ready_go && ms_allowin;
 assign es_to_ms_valid =  es_valid && es_ready_go && !flush;
 always @(posedge clk) begin
@@ -265,7 +285,23 @@ assign data_size_is_two = inst_sw  || inst_lw  ||
 assign data_size_is_one = inst_lh  || inst_sh  || inst_lhu ||
                         ((inst_lwl || inst_swl) && mem_pos == 2'd1) ||
                         ((inst_lwr || inst_swr) && mem_pos == 2'd2);
-assign data_sram_req = (|es_ld_inst) || (|es_st_inst); // TODO
+reg data_sram_req_r;
+always @(posedge clk) begin
+    if (reset) begin
+        data_sram_req_r <= 1'b0;
+    end
+    else if (data_sram_req && data_sram_addr_ok)begin
+        data_sram_req_r <= 1'b0;
+    end
+    else if (es_to_ms_valid && ms_allowin || !es_valid)begin
+        data_sram_req_r <= 1'b0;
+    end
+    else if ((es_load_op || es_store_op) && ms_allowin) begin
+        data_sram_req_r <= 1'b1;
+    end
+end
+
+assign data_sram_req = data_sram_req_r; // TODO
 assign data_sram_wr = (|data_sram_wstrb);
 assign data_sram_size = data_size_is_two ? 2'd2 :
                         data_size_is_one ? 2'd1 :

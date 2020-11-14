@@ -156,7 +156,7 @@ end
 
 // wire pf_ready_go;
 // assign pf_ready_go  = pf_ready_go_r;// ~br_stall && (inst_sram_req & inst_sram_addr_ok);
-assign to_fs_valid  = ~reset && inst_sram_addr_ok;   // && pf_ready_go;
+assign to_fs_valid  = ~reset && inst_sram_addr_ok && ~br_stall;   // && pf_ready_go;
 assign seq_pc       = fs_pc + 3'h4;
 assign nextpc       = ws_ex_r      ? 32'hbfc00380 :
                       ws_eret_r    ? cp0_epc      :
@@ -194,7 +194,6 @@ assign fs_to_ds_valid =  fs_valid && fs_ready_go;// && !ws_eret && !ws_ex && !ca
 //     else if (fs_valid && inst_sram_data_ok && !ds_allowin) begin
 //         cancle <= 1'b0;
 //     end 
-
 // end
 
 always @(posedge clk) begin

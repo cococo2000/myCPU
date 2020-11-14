@@ -55,22 +55,22 @@ always @(posedge clk) begin
     if (reset) begin
         bd_done <= 1'b0;
     end
-    else if (ds_br_or_jump_op) begin
-        bd_done <= 1'b0;
-    end
     else if (ds_br_or_jump_op_r && fs_valid) begin
         bd_done <= 1'b1;
+    end
+    else if (ds_br_or_jump_op) begin
+        bd_done <= 1'b0;
     end
 end
 always @(posedge clk) begin
     if (reset) begin
         ds_br_or_jump_op_r = 1'b0;
     end
-    else if (ds_br_or_jump_op) begin
-        ds_br_or_jump_op_r = 1'b1;
-    end
     else if (fs_to_ds_valid && ds_allowin) begin
         ds_br_or_jump_op_r = 1'b0;
+    end
+    else if (ds_br_or_jump_op) begin
+        ds_br_or_jump_op_r = 1'b1;
     end
 end
 always @(posedge clk) begin

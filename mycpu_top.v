@@ -86,6 +86,7 @@ if_stage if_stage(
     // outputs
     .fs_to_ds_valid   (fs_to_ds_valid   ),
     .fs_to_ds_bus     (fs_to_ds_bus     ),
+    .ds_to_es_valid   (ds_to_es_valid   ),
     // inst sram interface
     // .inst_sram_en   (inst_sram_en   ),
     // .inst_sram_wen  (inst_sram_wen  ),

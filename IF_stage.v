@@ -10,6 +10,7 @@ module if_stage(
     // to ds
     output                         fs_to_ds_valid ,
     output [`FS_TO_DS_BUS_WD -1:0] fs_to_ds_bus   ,
+    input                          ds_to_es_valid ,
     // inst sram interface
     // output        inst_sram_en   ,
     // output [ 3:0] inst_sram_wen  ,
@@ -45,37 +46,22 @@ wire         br_stall;
 wire         br_taken;
 wire [ 31:0] br_target;
 assign {ds_br_or_jump_op, br_stall, br_taken, br_target} = br_bus;
-// reg [`BR_BUS_WD - 1:0] br_bus_r;
-// reg          bd_done;
-// reg          br_bus_valid;
-// always @(posedge clk) begin
-//     if (reset) begin
-//         br_bus_r <= `BR_BUS_WD'b0;
-//         br_bus_valid <= 1'b0;
-//     end
-//     else if (pf_ready_go && fs_allowin) begin
-//         br_bus_valid <= 1'b0;
-//     end
-//     else if (ds_allowin) begin
-//         br_bus_r <= br_bus;
-//         br_bus_valid <= 1'b1;
-//     end
-// end
-// always @(posedge clk) begin
-//     if (reset) begin
-//         bd_done <= 1'b0;
-//     end
-//     else if (ds_allowin) begin
-//         bd_done <= 1'b0;
-//     end
-//     else if(~br_stall && br_taken && fs_valid)begin
-//         bd_done <= 1'b1;
-//     end
-// end
 
+reg        bd_done;
 reg        ds_br_or_jump_op_r;
 reg        br_taken_r;
 reg [31:0] br_target_r;
+always @(posedge clk) begin
+    if (reset) begin
+        bd_done <= 1'b0;
+    end
+    else if (ds_br_or_jump_op) begin
+        bd_done <= 1'b0;
+    end
+    else if (ds_br_or_jump_op_r && fs_valid) begin
+        bd_done <= 1'b1;
+    end
+end
 always @(posedge clk) begin
     if (reset) begin
         ds_br_or_jump_op_r = 1'b0;
@@ -97,7 +83,7 @@ always @(posedge clk) begin
     else if (br_taken) begin
         br_taken_r <= 1'b1;
     end
-    else if (to_fs_valid && fs_allowin) begin
+    else if (to_fs_valid && fs_allowin && bd_done) begin
         br_taken_r <= 1'b0;
     end
 end
@@ -141,7 +127,7 @@ reg [31:0] inst_sram_rdata_r;
 reg        fs_ready_go_r;
 // reg        cancel_rdata_r;
 // reg        nextpc_r_valid;
-// reg [31:0] nextpc_r;
+reg [31:0] nextpc_r;
 
 wire        fs_ex;
 wire        fs_bd;
@@ -156,67 +142,27 @@ assign fs_to_ds_bus = {fs_bd,       // 70:70
                       };
 
 // pre-IF stage
-// always @(posedge clk) begin
-//     if (reset) begin
-//         pf_ready_go_r <= 1'b0;
-//     end
-//     else if (inst_sram_req && inst_sram_addr_ok)begin
-//         pf_ready_go_r <= 1'b1;
-//     end
-//     else if (to_fs_valid && fs_allowin)begin
-//         pf_ready_go_r <= 1'b0;
-//     end
-// end
-// always @(posedge clk) begin
-//     if (reset) begin
-//         nextpc_r_valid <= 1'b0;
-//     end
-//     else if (to_fs_valid && fs_allowin && ~ws_ex && ~ws_eret) begin
-//         nextpc_r_valid <= 1'b0;
-//     end
-//     // else if (to_fs_valid && fs_allowin && ~br_stall)begin
-//     //     nextpc_r_valid <= 1'b0;
-//     // end
-//     else if (!nextpc_r_valid && !br_stall) begin
-//         nextpc_r_valid <= 1'b1;
-//     end
-
-//     if (reset) begin
-//         nextpc_r <= 32'b0;
-//     end
-//     else if (ws_ex) begin
-//         nextpc_r <= 32'hbfc00380;
-//     end
-//     else if (ws_eret) begin
-//         nextpc_r <= cp0_epc;
-//     end
-//     else if (!nextpc_r_valid) begin
-//         nextpc_r <= nextpc;
-//     end
-// end
+always @(posedge clk) begin
+    if (reset) begin
+        nextpc_r <= seq_pc;
+    end
+    else if (inst_sram_req && inst_sram_addr_ok) begin
+        nextpc_r <= nextpc;
+    end
+    else if (br_taken) begin
+        nextpc_r <= nextpc;
+    end
+end
 
 // wire pf_ready_go;
 // assign pf_ready_go  = pf_ready_go_r;// ~br_stall && (inst_sram_req & inst_sram_addr_ok);
 assign to_fs_valid  = ~reset && inst_sram_addr_ok;   // && pf_ready_go;
 assign seq_pc       = fs_pc + 3'h4;
-assign nextpc       = ws_ex      ? 32'hbfc00380 :
-                      ws_eret    ? cp0_epc      :
-                      br_taken_r ? br_target_r  :
-                                   seq_pc;
-
-// always @(posedge clk) begin
-//     if (reset) begin
-//         cancel_rdata_r <= 1'b0;
-//     end
-//     else if ((ws_ex || ws_eret) && !inst_sram_data_ok) begin
-//         if(pf_ready_go || fs_allowin == 1'b0 && fs_ready_go == 1'b0)begin
-//             cancel_rdata_r <= 1'b1;
-//         end
-//     end
-//     else if (fs_to_ds_valid && ds_allowin) begin// (inst_sram_data_ok) begin
-//         cancel_rdata_r <= 1'b0;
-//     end
-// end
+assign nextpc       = ws_ex_r      ? 32'hbfc00380 :
+                      ws_eret_r    ? cp0_epc      :
+                      br_taken_r &&  bd_done ? br_target_r :
+                    //   br_taken_r && !bd_done ? nextpc_r    :
+                                                      seq_pc;
 
 // IF stage
 always @(posedge clk) begin

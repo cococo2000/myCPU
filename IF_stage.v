@@ -105,7 +105,7 @@ always @(posedge clk) begin
     if (reset) begin
         br_target_r <= 32'b0;
     end
-    else if (br_taken_r && !br_stall) begin
+    else if (br_taken && !br_stall) begin
         br_target_r <= br_target;
     end
 end

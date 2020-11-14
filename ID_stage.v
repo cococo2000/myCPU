@@ -549,9 +549,11 @@ assign br_taken = (   inst_beq                  &&  rs_eq_rt
                    || inst_blez                 && !rs_gtz
                    || jump_op
                   ) && ds_valid;
-assign br_target =  branch_op             ? (fs_pc + {{14{imm[15]}}, imm[15:0], 2'b0}) :
+wire [31:0] bd_pc;
+assign bd_pc = ds_pc + 32'h4;
+assign br_target =  branch_op             ? (bd_pc + {{14{imm[15]}}, imm[15:0], 2'b0}) :
                    (inst_jr  || inst_jalr)? rs_value                                   :
-                   (inst_jal || inst_j)   ? {fs_pc[31:28], jidx[25:0], 2'b0}           :
+                   (inst_jal || inst_j)   ? {bd_pc[31:28], jidx[25:0], 2'b0}           :
                                             32'b0;
 assign br_bus    = {br_or_jump_op, br_stall, br_taken, br_target};
 

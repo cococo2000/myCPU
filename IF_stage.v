@@ -106,7 +106,7 @@ always @(posedge clk) begin
     else if (ws_ex) begin
         ws_ex_r <= 1'b1;
     end
-    else if (inst_sram_req && inst_sram_addr_ok && fs_allowin) begin
+    else if (to_fs_valid && fs_allowin) begin
         ws_ex_r <= 1'b0;
     end
 end
@@ -117,7 +117,7 @@ always @(posedge clk) begin
     else if (ws_eret) begin
         ws_eret_r <= 1'b1;
     end
-    else if (inst_sram_req && inst_sram_addr_ok && fs_allowin) begin
+    else if (to_fs_valid && fs_allowin) begin
         ws_eret_r <= 1'b0;
     end
 end
@@ -161,6 +161,12 @@ always @(posedge clk) begin
     if (reset) begin
         nextpc_r <= seq_pc;
     end
+    else if (ws_ex) begin
+        nextpc_r <= 32'hbfc00380;
+    end
+    else if (ws_eret) begin
+        nextpc_r <= cp0_epc;
+    end
     else if (to_fs_valid && fs_allowin) begin
         nextpc_r <= nextpc;
     end
@@ -169,8 +175,9 @@ end
 wire pf_ready_go;
 always @(posedge clk) begin
     if (reset) begin
-        pf_ready_go_r <= 1'b0;
+        pf_ready_go_r <= 1'b1;
     end
+    // else if ()
     else if (inst_sram_req && inst_sram_addr_ok)begin
         pf_ready_go_r <= 1'b1;
     end
@@ -179,7 +186,7 @@ always @(posedge clk) begin
     end
 end
 assign pf_ready_go  = pf_ready_go_r;// ~br_stall && (inst_sram_req & inst_sram_addr_ok);
-assign to_fs_valid  = ~reset && inst_sram_addr_ok && ~br_stall;   // && pf_ready_go;
+assign to_fs_valid  = ~reset && pf_ready_go;// && inst_sram_addr_ok && ~br_stall;
 assign seq_pc       = fs_pc + 3'h4;
 assign nextpc       = ws_ex_r      ? 32'hbfc00380 :
                       ws_eret_r    ? cp0_epc      :
@@ -192,9 +199,9 @@ always @(posedge clk) begin
     if (reset) begin
         fs_ready_go_r <= 1'b0;
     end
-    else if (ws_ex || ws_eret) begin
-        fs_ready_go_r <= 1'b0;
-    end
+    // else if (ws_ex || ws_eret) begin
+    //     fs_ready_go_r <= 1'b0;
+    // end
     else if (fs_to_ds_valid && ds_allowin) begin
         fs_ready_go_r <= 1'b0;
     end
@@ -233,9 +240,9 @@ always @(posedge clk) begin
     if (reset) begin
         fs_valid <= 1'b0;
     end
-    // else if (ws_ex || ws_eret) begin
-    //     fs_valid <= 1'b0;
-    // end
+    else if (ws_ex || ws_eret) begin
+        fs_valid <= 1'b0;
+    end
     else if (fs_allowin) begin
         fs_valid <= to_fs_valid;
     end
@@ -257,9 +264,9 @@ always @(posedge clk) begin
     if (reset) begin
         inst_sram_req_r <= 1'b0;
     end
-    else if (ws_ex_r || ws_eret_r) begin
-        inst_sram_req_r <= 1'b0;
-    end
+    // else if (ws_ex || ws_eret) begin
+    //     inst_sram_req_r <= 1'b0;
+    // end
     else if (~br_stall && to_fs_valid && fs_allowin) begin // TODO
         inst_sram_req_r <= 1'b1;
     end

@@ -80,7 +80,7 @@ always @(posedge clk) begin
     else if (ws_ex || ws_eret) begin
         br_taken_r <= 1'b0;
     end
-    else if (br_taken) begin
+    else if (br_taken && !br_stall) begin
         br_taken_r <= 1'b1;
     end
     else if (to_fs_valid && fs_allowin && bd_done) begin

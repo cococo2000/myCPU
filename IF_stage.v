@@ -205,25 +205,25 @@ always @(posedge clk) begin
     else if (fs_to_ds_valid && ds_allowin) begin
         fs_ready_go_r <= 1'b0;
     end
-    else if (inst_sram_data_ok && !cancel) begin
+    else if (inst_sram_data_ok && !cancel && !ws_ex && !ws_eret) begin
         fs_ready_go_r <= 1'b1;
     end
 end
 assign fs_ready_go    = fs_ready_go_r; // || inst_sram_data_ok //  && !cancel_rdata_r;// && ((br_bus_valid && pf_ready_go == 1'b0) ? 1'b0 : 1'b1);
 assign fs_allowin     = !fs_valid || fs_ready_go && ds_allowin;
-assign fs_to_ds_valid =  fs_valid && fs_ready_go;// && !ws_eret && !ws_ex && !cancel_rdata_r;
+assign fs_to_ds_valid =  fs_valid && fs_ready_go;// && !ws_eret && !ws_ex && !cancel;
 
 always@(posedge clk) begin
     if (reset) begin
+        cancel <= 1'b0;
+    end
+    else if (inst_sram_data_ok) begin
         cancel <= 1'b0;
     end
     else if (ws_ex || ws_eret) begin
         if (to_fs_valid || fs_allowin == 1'b0 && fs_ready_go == 1'b0) begin
             cancel <= 1'b1;
         end
-    end
-    else if (inst_sram_data_ok) begin
-        cancel <= 1'b0;
     end
 end
 // always @(posedge clk) begin
@@ -287,10 +287,25 @@ always @(posedge clk) begin
         inst_sram_rdata_r <= 32'b0;
     end
     else if (inst_sram_data_ok) begin
-        inst_sram_rdata_r <= inst_sram_rdata & {32{~cancel && ~ws_ex && ~ws_eret}};
+        inst_sram_rdata_r <= inst_sram_rdata;// & {32{~cancel && ~ws_ex && ~ws_eret}};
     end
 end
-assign fs_inst = inst_sram_rdata_r;
+reg fs_inst_valid;
+always@(posedge clk)begin
+    if(reset)begin
+        fs_inst_valid <= 1'b0;
+    end
+    else if(ws_eret || ws_ex) begin
+        fs_inst_valid <= 1'b0;
+    end
+    else if(fs_valid && inst_sram_data_ok && !ds_allowin)begin
+        fs_inst_valid <= 1'b1;
+    end
+    else if(fs_to_ds_valid && ds_allowin)begin
+        fs_inst_valid <= 1'b0;
+    end
+end
+assign fs_inst = fs_inst_valid ? inst_sram_rdata_r : inst_sram_rdata;
 
 // exception judge
 wire   addr_error;

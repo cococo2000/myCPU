@@ -34,27 +34,47 @@ module if_stage(
 
 reg         fs_valid;
 wire        fs_ready_go;
+reg         fs_ready_go_r;
 wire        fs_allowin;
+wire        pf_ready_go;
+reg         pf_ready_go_r;
 wire        to_fs_valid;
 
 wire [31:0] seq_pc;
 wire [31:0] nextpc;
+reg  [31:0] nextpc_r;
 
+reg         inst_sram_req_r;
+reg         fs_inst_valid;
+reg  [31:0] inst_sram_rdata_r;
+
+reg         bd_done;
 wire        ds_br_or_jump_op;
+reg         ds_br_or_jump_op_r;
 wire        br_stall;
 wire        br_taken;
+reg         br_taken_r;
 wire [31:0] br_target;
+reg  [31:0] br_target_r;
 assign {ds_br_or_jump_op, br_stall, br_taken, br_target} = br_bus;
 
-reg        bd_done;
-reg        ds_br_or_jump_op_r;
-reg        br_taken_r;
-reg [31:0] br_target_r;
+wire        fs_ex;
+wire        fs_bd;
+wire [ 4:0] fs_excode;
+wire [31:0] fs_inst;
+reg  [31:0] fs_pc;
+assign fs_to_ds_bus = {fs_bd,       // 70:70
+                       fs_ex,       // 69:69
+                       fs_excode,   // 68:64
+                       fs_inst,     // 63:32
+                       fs_pc        // 31:0
+                      };
 
-reg ws_ex_r;
-reg ws_eret_r;
-reg cancel;
+reg        ws_ex_r;
+reg        ws_eret_r;
+reg        cancel;
 
+// pre-IF stage
 always @(posedge clk) begin
     if (reset) begin
         bd_done <= 1'b1;
@@ -129,25 +149,6 @@ always @(posedge clk) begin
     end
 end
 
-reg        pf_ready_go_r;
-reg        inst_sram_req_r;
-reg [31:0] inst_sram_rdata_r;
-reg        fs_ready_go_r;
-reg [31:0] nextpc_r;
-
-wire        fs_ex;
-wire        fs_bd;
-wire [ 4:0] fs_excode;
-wire [31:0] fs_inst;
-reg  [31:0] fs_pc;
-assign fs_to_ds_bus = {fs_bd,       // 70:70
-                       fs_ex,       // 69:69
-                       fs_excode,   // 68:64
-                       fs_inst,     // 63:32
-                       fs_pc        // 31:0
-                      };
-
-// pre-IF stage
 always @(posedge clk) begin
     if (reset) begin
         nextpc_r <= seq_pc;
@@ -166,7 +167,6 @@ always @(posedge clk) begin
     end
 end
 
-wire pf_ready_go;
 always @(posedge clk) begin
     if (reset) begin
         pf_ready_go_r <= 1'b1;
@@ -185,6 +185,30 @@ assign nextpc       = ws_ex_r      ? 32'hbfc00380 :
                       ws_eret_r    ? cp0_epc      :
                       br_taken_r   ? br_target_r  :
                                      seq_pc;
+
+// assign inst_sram_en    = to_fs_valid && fs_allowin;
+// assign inst_sram_wen   = 4'h0;
+// assign inst_sram_addr  = nextpc;
+// assign inst_sram_wdata = 32'b0;
+
+always @(posedge clk) begin
+    if (reset) begin
+        inst_sram_req_r <= 1'b0;
+    end
+    else if (~br_stall && to_fs_valid && fs_allowin && bd_done) begin
+        inst_sram_req_r <= 1'b1;
+    end
+    else if (inst_sram_req && inst_sram_addr_ok)begin
+        inst_sram_req_r <= 1'b0;
+    end
+end
+
+assign inst_sram_req = inst_sram_req_r && ~br_stall;
+assign inst_sram_wr = 1'b0;
+assign inst_sram_size = 2'h2;
+assign inst_sram_wstrb = 4'b0;
+assign inst_sram_addr = nextpc_r;
+assign inst_sram_wdata = 32'b0;
 
 // IF stage
 always @(posedge clk) begin
@@ -235,30 +259,6 @@ always @(posedge clk) begin
     end
 end
 
-// assign inst_sram_en    = to_fs_valid && fs_allowin;
-// assign inst_sram_wen   = 4'h0;
-// assign inst_sram_addr  = nextpc;
-// assign inst_sram_wdata = 32'b0;
-
-always @(posedge clk) begin
-    if (reset) begin
-        inst_sram_req_r <= 1'b0;
-    end
-    else if (~br_stall && to_fs_valid && fs_allowin && bd_done) begin
-        inst_sram_req_r <= 1'b1;
-    end
-    else if (inst_sram_req && inst_sram_addr_ok)begin
-        inst_sram_req_r <= 1'b0;
-    end
-end
-
-assign inst_sram_req = inst_sram_req_r && ~br_stall;
-assign inst_sram_wr = 1'b0;
-assign inst_sram_size = 2'h2;
-assign inst_sram_wstrb = 4'b0;
-assign inst_sram_addr = nextpc_r;
-assign inst_sram_wdata = 32'b0;
-
 always @(posedge clk) begin
     if (reset) begin
         inst_sram_rdata_r <= 32'b0;
@@ -268,7 +268,6 @@ always @(posedge clk) begin
     end
 end
 
-reg fs_inst_valid;
 always@(posedge clk)begin
     if(reset)begin
         fs_inst_valid <= 1'b0;

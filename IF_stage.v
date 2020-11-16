@@ -51,6 +51,11 @@ reg        bd_done;
 reg        ds_br_or_jump_op_r;
 reg        br_taken_r;
 reg [31:0] br_target_r;
+
+reg ws_ex_r;
+reg ws_eret_r;
+reg cancel;
+
 always @(posedge clk) begin
     if (reset) begin
         bd_done <= 1'b0;
@@ -66,6 +71,9 @@ always @(posedge clk) begin
     if (reset) begin
         ds_br_or_jump_op_r = 1'b0;
     end
+    else if (ws_ex_r || ws_eret_r) begin
+        ds_br_or_jump_op_r = 1'b0;
+    end
     else if (fs_to_ds_valid && ds_allowin) begin
         ds_br_or_jump_op_r = 1'b0;
     end
@@ -77,7 +85,7 @@ always @(posedge clk) begin
     if (reset) begin
         br_taken_r <= 1'b0;
     end
-    else if (ws_ex || ws_eret) begin
+    else if (ws_ex_r || ws_eret_r) begin
         br_taken_r <= 1'b0;
     end
     else if (br_taken && !br_stall) begin
@@ -96,9 +104,6 @@ always @(posedge clk) begin
     end
 end
 
-reg ws_ex_r;
-reg ws_eret_r;
-reg cancel;
 always @(posedge clk) begin
     if (reset) begin
         ws_ex_r <= 1'b0;

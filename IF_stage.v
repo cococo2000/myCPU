@@ -55,10 +55,28 @@ reg [31:0] br_target_r;
 reg ws_ex_r;
 reg ws_eret_r;
 reg cancel;
+// reg        br_bus_r_valid;
 
+// always@(posedge clk) begin
+//     if (reset) begin
+//         br_bus_r_valid <= 1'b0;
+//     end
+//     else if (ws_ex || ws_eret) begin
+//         br_bus_r_valid <= 1'b0;
+//     end
+//     else if (br_taken && !br_stall) begin
+//         br_bus_r_valid <= 1'b1;
+//     end
+//     else if (fs) begin
+//         br_bus_r_valid <= 1'b0;
+//     end
+// end
 always @(posedge clk) begin
     if (reset) begin
-        bd_done <= 1'b0;
+        bd_done <= 1'b1;
+    end
+    else if (ws_ex || ws_eret) begin
+        bd_done <= 1'b1;
     end
     else if (ds_br_or_jump_op_r && fs_valid) begin
         bd_done <= 1'b1;
@@ -66,6 +84,9 @@ always @(posedge clk) begin
     else if (ds_br_or_jump_op) begin
         bd_done <= 1'b0;
     end
+    // else if (fs_to_ds_valid && ds_allowin) begin
+    //     bd_done <= 1'b0;
+    // end
 end
 always @(posedge clk) begin
     if (reset) begin
@@ -88,6 +109,9 @@ always @(posedge clk) begin
     else if (ws_ex_r || ws_eret_r) begin
         br_taken_r <= 1'b0;
     end
+    // else if (br_taken && !br_stall && bd_done) begin
+    //     br_taken_r <= 1'b0;
+    // end
     else if (br_taken && !br_stall) begin
         br_taken_r <= 1'b1;
     end
@@ -172,6 +196,9 @@ always @(posedge clk) begin
     else if (ws_eret) begin
         nextpc_r <= cp0_epc;
     end
+    else if (br_taken && !br_stall && bd_done && !ds_br_or_jump_op) begin
+        nextpc_r <= br_target;
+    end
     else if (to_fs_valid && fs_allowin) begin
         nextpc_r <= nextpc;
     end
@@ -195,7 +222,8 @@ assign to_fs_valid  = ~reset && pf_ready_go;// && inst_sram_addr_ok && ~br_stall
 assign seq_pc       = fs_pc + 3'h4;
 assign nextpc       = ws_ex_r      ? 32'hbfc00380 :
                       ws_eret_r    ? cp0_epc      :
-                      br_taken_r &&  bd_done ? br_target_r :
+                    //   ds_br_or_jump_op && !br_stall && br_taken && bd_done ? br_target:
+                      br_taken_r   ? br_target_r :
                     //   br_taken_r && !bd_done ? nextpc_r    :
                                                       seq_pc;
 
@@ -272,7 +300,7 @@ always @(posedge clk) begin
     // else if (ws_ex || ws_eret) begin
     //     inst_sram_req_r <= 1'b0;
     // end
-    else if (~br_stall && to_fs_valid && fs_allowin) begin // TODO
+    else if (~br_stall && to_fs_valid && fs_allowin && bd_done) begin // TODO
         inst_sram_req_r <= 1'b1;
     end
     else if (inst_sram_req && inst_sram_addr_ok)begin

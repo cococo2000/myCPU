@@ -308,7 +308,7 @@ always @(posedge clk) begin
     end
 end
 
-assign inst_sram_req = inst_sram_req_r; // TODO
+assign inst_sram_req = inst_sram_req_r && ~br_stall; // TODO
 assign inst_sram_wr = 1'b0;
 assign inst_sram_size = 2'h2;
 assign inst_sram_wstrb = 4'b0;

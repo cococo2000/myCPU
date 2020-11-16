@@ -14,6 +14,7 @@ module mem_stage(
     output [`MS_TO_WS_BUS_WD -1:0] ms_to_ws_bus  ,
     // from data-sram
     // input  [31                 :0] data_sram_rdata,
+    // sram like interface
     input                          data_sram_data_ok,
     input  [31                 :0] data_sram_rdata,
     // forward
@@ -174,12 +175,12 @@ wire ms_block;
 wire ms_block_valid;
 assign ms_block = ms_gr_we;
 assign ms_block_valid = ms_block && ms_valid;
-assign ms_fwd_bus = {ms_valid && ms_mfc0,// 43:43
-                     ms_valid && ms_res_from_mem,// 42:42
-                     ms_rf_we       ,    // 41:38
-                     ms_block_valid ,    // 37:37
-                     ms_dest        ,    // 36:32
-                     ms_final_result     // 31:0
+assign ms_fwd_bus = {ms_valid && ms_mfc0        ,   // 43:43
+                     ms_valid && ms_res_from_mem,   // 42:42
+                     ms_rf_we                   ,   // 41:38
+                     ms_block_valid             ,   // 37:37
+                     ms_dest                    ,   // 36:32
+                     ms_final_result                // 31:0
                     };
 
 // exception

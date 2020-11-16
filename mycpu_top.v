@@ -9,6 +9,7 @@ module mycpu_top(
     // output [31:0] inst_sram_addr,
     // output [31:0] inst_sram_wdata,
     // input  [31:0] inst_sram_rdata,
+    // sram like interface
     output        inst_sram_req,
     output        inst_sram_wr,
     output [ 1:0] inst_sram_size,
@@ -25,6 +26,7 @@ module mycpu_top(
     // output [31:0] data_sram_addr,
     // output [31:0] data_sram_wdata,
     // input  [31:0] data_sram_rdata,
+    // sram like interface
     output        data_sram_req,
     output        data_sram_wr,
     output [ 1:0] data_sram_size,
@@ -92,6 +94,7 @@ if_stage if_stage(
     // .inst_sram_addr (inst_sram_addr ),
     // .inst_sram_wdata(inst_sram_wdata),
     // .inst_sram_rdata(inst_sram_rdata),
+    // sram like interface
     .inst_sram_req    (inst_sram_req    ),
     .inst_sram_wr     (inst_sram_wr     ),
     .inst_sram_size   (inst_sram_size   ),
@@ -147,6 +150,7 @@ exe_stage exe_stage(
     // .data_sram_wen  (data_sram_wen  ),
     // .data_sram_addr (data_sram_addr ),
     // .data_sram_wdata(data_sram_wdata),
+    // sram like interface
     .data_sram_req    (data_sram_req    ),
     .data_sram_wr     (data_sram_wr     ),
     .data_sram_size   (data_sram_size   ),
@@ -175,6 +179,7 @@ mem_stage mem_stage(
     .ms_to_ws_bus   (ms_to_ws_bus   ),
     // from data-sram
     // .data_sram_rdata(data_sram_rdata),
+    // sram like interface
     .data_sram_data_ok(data_sram_data_ok),
     .data_sram_rdata  (data_sram_rdata  ),
     // forward_bus
@@ -202,7 +207,7 @@ wb_stage wb_stage(
     .cp0_epc        (cp0_epc        ),
     .ws_eret        (ws_eret        ),
     .ws_ex          (ws_ex          ),
-    .has_int          (has_int          )
+    .has_int        (has_int        )
 );
 
 endmodule

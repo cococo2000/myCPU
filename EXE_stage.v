@@ -17,6 +17,7 @@ module exe_stage(
     // output [ 3:0] data_sram_wen  ,
     // output [31:0] data_sram_addr ,
     // output [31:0] data_sram_wdata,
+    // sram like interface
     output        data_sram_req,
     output        data_sram_wr,
     output [ 1:0] data_sram_size,

@@ -255,6 +255,9 @@ always @(posedge clk) begin
     if (reset) begin
         ds_valid <= 1'b0;
     end
+    else if (flush) begin
+        ds_valid <= 1'b0;
+    end
     else if (ds_allowin) begin
         ds_valid <= fs_to_ds_valid;
     end

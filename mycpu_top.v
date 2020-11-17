@@ -144,7 +144,7 @@ wire        data_sram_data_ok;
 
 // IF stage
 if_stage if_stage(
-    .clk              (clk              ),
+    .clk              (aclk             ),
     .reset            (reset            ),
     // allowin
     .ds_allowin       (ds_allowin       ),
@@ -176,7 +176,7 @@ if_stage if_stage(
 );
 // ID stage
 id_stage id_stage(
-    .clk            (clk            ),
+    .clk            (aclk           ),
     .reset          (reset          ),
     // allowin
     .es_allowin     (es_allowin     ),
@@ -199,7 +199,7 @@ id_stage id_stage(
 );
 // EXE stage
 exe_stage exe_stage(
-    .clk              (clk              ),
+    .clk              (aclk             ),
     .reset            (reset            ),
     // allowin
     .ms_allowin       (ms_allowin       ),
@@ -231,7 +231,7 @@ exe_stage exe_stage(
 );
 // MEM stage
 mem_stage mem_stage(
-    .clk              (clk              ),
+    .clk              (aclk             ),
     .reset            (reset            ),
     // allowin
     .ws_allowin       (ws_allowin       ),
@@ -254,7 +254,7 @@ mem_stage mem_stage(
 );
 // WB stage
 wb_stage wb_stage(
-    .clk              (clk              ),
+    .clk              (aclk             ),
     .reset            (reset            ),
     // allowin
     .ws_allowin       (ws_allowin       ),
@@ -281,7 +281,7 @@ cpu_axi_interface cpu_axi_interface(
 
     // inst sram like interface
     .inst_sram_req    (inst_sram_req    ),
-    .inst_sram_wr     (inst_sram_wen    ),
+    .inst_sram_wr     (inst_sram_wr     ),
     .inst_sram_size   (inst_sram_size   ),
     .inst_sram_addr   (inst_sram_addr   ),
     .inst_sram_wdata  (inst_sram_wdata  ),
@@ -291,7 +291,7 @@ cpu_axi_interface cpu_axi_interface(
 
     // data sram like interface
     .data_sram_req    (data_sram_req    ),
-    .data_sram_wr     (data_sram_wen    ),
+    .data_sram_wr     (data_sram_wr     ),
     .data_sram_size   (data_sram_size   ),
     .data_sram_addr   (data_sram_addr   ),
     .data_sram_wdata  (data_sram_wdata  ),

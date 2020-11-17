@@ -25,6 +25,7 @@ module mem_stage(
 
 reg         ms_valid;
 wire        ms_ready_go;
+reg         cancel;
 reg [31:0] data_sram_rdata_r;
 
 reg [`ES_TO_MS_BUS_WD -1:0] es_to_ms_bus_r;
@@ -84,7 +85,7 @@ always @(posedge clk) begin
     if (reset) begin
         ms_ready_go_r <= 1'b0;
     end
-    else if (data_sram_data_ok || ms_ex || flush) begin
+    else if ((data_sram_data_ok && !cancel) || ms_ex || flush) begin
         ms_ready_go_r <= 1'b1;
     end
     else if (ms_to_ws_valid && ws_allowin) begin
@@ -161,6 +162,20 @@ assign mem_result   = inst_lb ? {{24{lb_data[ 7]}}, lb_data}:
                                 data_sram_rdata_r;
 assign ms_final_result = ms_res_from_mem ? mem_result   :
                                            ms_alu_result;
+
+always@(posedge clk) begin
+    if (reset) begin
+        cancel <= 1'b0;
+    end
+    else if (data_sram_data_ok) begin
+        cancel <= 1'b0;
+    end
+    else if (flush) begin
+        if (es_to_ms_valid || ms_allowin == 1'b0 && ms_ready_go == 1'b0) begin
+            cancel <= 1'b1;
+        end
+    end
+end
 always @(posedge clk) begin
     if (reset) begin
         data_sram_rdata_r <= 32'b0;

@@ -195,7 +195,7 @@ always @(posedge clk) begin
     if (reset) begin
         inst_sram_req_r <= 1'b0;
     end
-    else if (~br_stall && to_fs_valid && fs_allowin && bd_done) begin
+    else if (to_fs_valid && fs_allowin) begin
         inst_sram_req_r <= 1'b1;
     end
     else if (inst_sram_req && inst_sram_addr_ok)begin

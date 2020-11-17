@@ -93,7 +93,7 @@ always @(posedge clk) begin
     if (reset) begin
         ds_br_or_jump_op_r = 1'b0;
     end
-    else if (ws_ex_r || ws_eret_r) begin
+    else if (ws_ex || ws_eret) begin
         ds_br_or_jump_op_r = 1'b0;
     end
     else if (fs_to_ds_valid && ds_allowin) begin
@@ -107,13 +107,13 @@ always @(posedge clk) begin
     if (reset) begin
         br_taken_r <= 1'b0;
     end
-    else if (ws_ex_r || ws_eret_r) begin
+    else if (ws_ex || ws_eret) begin
         br_taken_r <= 1'b0;
     end
     else if (br_taken && !br_stall) begin
         br_taken_r <= 1'b1;
     end
-    else if (to_fs_valid && fs_allowin && bd_done) begin
+    else if (to_fs_valid && fs_allowin) begin
         br_taken_r <= 1'b0;
     end
 end

@@ -275,7 +275,7 @@ always@(posedge clk)begin
     else if(ws_eret || ws_ex) begin
         fs_inst_valid <= 1'b0;
     end
-    else if(fs_valid && inst_sram_data_ok && !ds_allowin)begin
+    else if(fs_valid && inst_sram_data_ok)begin
         fs_inst_valid <= 1'b1;
     end
     else if(fs_to_ds_valid && ds_allowin)begin

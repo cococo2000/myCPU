@@ -127,6 +127,7 @@ assign es_data_valid = !(flush || ms_flush || es_ex);
 wire        inst_sram_req    ;
 wire        inst_sram_wr     ;
 wire [ 1:0] inst_sram_size   ;
+wire [ 3:0] inst_sram_wstrb  ;
 wire [31:0] inst_sram_addr   ;
 wire [31:0] inst_sram_wdata  ;
 wire [31:0] inst_sram_rdata  ;
@@ -136,6 +137,7 @@ wire        inst_sram_data_ok;
 wire        data_sram_req    ;
 wire        data_sram_wr     ;
 wire [ 1:0] data_sram_size   ;
+wire [ 3:0] data_sram_wstrb  ;
 wire [31:0] data_sram_addr   ;
 wire [31:0] data_sram_wdata  ;
 wire [31:0] data_sram_rdata  ;
@@ -283,6 +285,7 @@ cpu_axi_interface cpu_axi_interface(
     .inst_sram_req    (inst_sram_req    ),
     .inst_sram_wr     (inst_sram_wr     ),
     .inst_sram_size   (inst_sram_size   ),
+    .inst_sram_wstrb  (inst_sram_wstrb  ),
     .inst_sram_addr   (inst_sram_addr   ),
     .inst_sram_wdata  (inst_sram_wdata  ),
     .inst_sram_rdata  (inst_sram_rdata  ),
@@ -293,6 +296,7 @@ cpu_axi_interface cpu_axi_interface(
     .data_sram_req    (data_sram_req    ),
     .data_sram_wr     (data_sram_wr     ),
     .data_sram_size   (data_sram_size   ),
+    .data_sram_wstrb  (data_sram_wstrb  ),
     .data_sram_addr   (data_sram_addr   ),
     .data_sram_wdata  (data_sram_wdata  ),
     .data_sram_rdata  (data_sram_rdata  ),

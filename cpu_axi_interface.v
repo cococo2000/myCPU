@@ -147,21 +147,26 @@ always @(posedge clk)begin
     AR_D_VALID: begin
         arid <= 4'b1;
         araddr <= data_sram_addr;
-        arvalid <= 1'b1;
+        arvalid <= 1'b1 & ~arready;
         arsize <= {1'b0, data_sram_size};
+        if(arready && arvalid) begin
+            data_sram_addr_ok <= 1'b1;
+        end
     end
     AR_I_VALID: begin
         arid <= 4'b0;
         araddr <= inst_sram_addr;
-        arvalid <= 1'b1;
+        arvalid <= 1'b1 & ~arready;
         arsize <= {1'b0, inst_sram_size};
+        if(arready && arvalid) begin
+            inst_sram_addr_ok <= 1'b1;
+        end
     end
     AR_READY: begin
         arid <= 4'b0;
         araddr <= 32'b0;
         arvalid <= 1'b0;
         arsize <= 3'b0;
-        inst_sram_addr_ok <= 1'b1;
     end
     endcase
 end
@@ -193,11 +198,11 @@ always @(*) begin
             r_next_state = r_state;
     end
     R_VALID: begin
-        // if(rready)
-        //     r_next_state = R_READY;
-        // else
-        //     r_next_state = r_state;
-        r_next_state = R_READY;
+        if(rvalid && rready)
+            r_next_state = R_READY;
+        else
+            r_next_state = r_state;
+        // r_next_state = R_READY;
     end
     R_READY: begin
         // if(rlast)
@@ -221,15 +226,21 @@ always @(posedge clk)begin
     end
     R_VALID: begin
         rready <= 1'b1;
+        if (rid == 4'b0) begin
+            inst_sram_rdata <= rdata;
+        end
+        else if (rid == 4'b1) begin
+            data_sram_rdata <= rdata;
+        end
     end
     R_READY: begin
         if (rid == 4'b0) begin
             inst_sram_data_ok <= 1'b1;
-            inst_sram_rdata <= rdata;
+            // inst_sram_rdata <= rdata;
         end
         else if (rid == 4'b1) begin
             data_sram_data_ok <= 1'b1;
-            data_sram_rdata <= rdata;
+            // data_sram_rdata <= rdata;
         end
     end
     endcase

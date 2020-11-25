@@ -307,7 +307,7 @@ assign data_sram_wr = (|data_sram_wstrb);
 assign data_sram_size = data_size_is_two ? 2'd2 :
                         data_size_is_one ? 2'd1 :
                                            2'd0 ;
-assign data_sram_wstrb = {4{es_valid && es_data_valid}} & (
+assign data_sram_wstrb = {4{es_data_valid}} & (
                         inst_sw ?  4'hf                                                                :
                         inst_sh ? {                 {2{mem_pos[1]}},                 {2{~mem_pos[1]}}} :
                         inst_sb ? {mem_pos == 2'd3, mem_pos == 2'd2, mem_pos == 2'd1, mem_pos == 2'd0} :

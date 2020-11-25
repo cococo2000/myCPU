@@ -142,7 +142,7 @@ always @(posedge clk)begin
         araddr <= 32'b0;
         arvalid <= 1'b0;
         arsize <= 3'b0;
-        inst_sram_addr_ok <= 1'b0;
+        // inst_sram_addr_ok <= 1'b0;
         // data_sram_addr_ok <= 1'b0;
     end
     AR_D_VALID: begin
@@ -159,9 +159,9 @@ always @(posedge clk)begin
         araddr <= inst_sram_addr;
         arvalid <= 1'b1 & ~arready;
         arsize <= {1'b0, inst_sram_size};
-        if(arready && arvalid) begin
-            inst_sram_addr_ok <= 1'b1;
-        end
+        // if(arready && arvalid) begin
+        //     inst_sram_addr_ok <= 1'b1;
+        // end
     end
     AR_READY: begin
         arid <= 4'b0;
@@ -208,15 +208,29 @@ always @(*) begin
 end
 
 always @(posedge clk ) begin
-    if(r_state == R_VALID) begin
+    if (~resetn) begin
         rready <= 1'b1;
-    end else if (r_state == R_IDLE) begin
+    end
+    else if (rvalid && rready) begin
         rready <= 1'b0;
+    end
+    else begin
+        rready <= 1'b1;
     end
 end
 
+always @(posedge clk) begin
+    if (ar_state == AR_I_VALID && arready && arvalid) begin
+        inst_sram_addr_ok <= 1'b1;
+    end
+    else begin
+        inst_sram_addr_ok <= 1'b0;
+    end
+end
+
+
 always @(posedge clk)begin
-    if (r_state == R_VALID && rid == 4'b0 && rvalid && rready) begin
+    if (rid == 4'b0 && rvalid && rready) begin
         inst_sram_rdata <= rdata;
         inst_sram_data_ok <= 1'b1;
     end
@@ -232,16 +246,19 @@ always @(posedge clk) begin
     else if (aw_state == AW_ADDR && awready && awvalid) begin
         data_sram_addr_ok <= 1'b1;
     end
-    else if (ar_state == AR_IDLE) begin
+    else begin
         data_sram_addr_ok <= 1'b0;
     end
-    else if (aw_state == AW_IDLE) begin
-        data_sram_addr_ok <= 1'b0;
-    end
+    // else if (ar_state == AR_IDLE) begin
+    //     data_sram_addr_ok <= 1'b0;
+    // end
+    // else if (aw_state == AW_IDLE) begin
+    //     data_sram_addr_ok <= 1'b0;
+    // end
 end
 
 always @(posedge clk)begin
-    if (r_state == R_VALID && rid == 4'b1 && rvalid && rready) begin
+    if (rid == 4'b1 && rvalid && rready) begin
         data_sram_rdata <= rdata;
         data_sram_data_ok <= 1'b1;
     end else if (wb_state == WB_READY && bvalid && bready) begin

@@ -45,7 +45,7 @@ wire [31:0] nextpc;
 reg  [31:0] nextpc_r;
 
 reg         inst_sram_req_r;
-reg         fs_inst_valid;
+reg         inst_sram_rdata_r_valid;
 reg  [31:0] inst_sram_rdata_r;
 
 reg         bd_done;
@@ -270,19 +270,19 @@ end
 
 always@(posedge clk)begin
     if(reset)begin
-        fs_inst_valid <= 1'b0;
+        inst_sram_rdata_r_valid <= 1'b0;
     end
     else if(ws_eret || ws_ex) begin
-        fs_inst_valid <= 1'b0;
+        inst_sram_rdata_r_valid <= 1'b0;
     end
     else if(fs_valid && inst_sram_data_ok)begin
-        fs_inst_valid <= 1'b1;
+        inst_sram_rdata_r_valid <= 1'b1;
     end
     else if(fs_to_ds_valid && ds_allowin)begin
-        fs_inst_valid <= 1'b0;
+        inst_sram_rdata_r_valid <= 1'b0;
     end
 end
-assign fs_inst = fs_inst_valid ? inst_sram_rdata_r : inst_sram_rdata;
+assign fs_inst = inst_sram_rdata_r_valid ? inst_sram_rdata_r : inst_sram_rdata;
 
 // exception judge
 wire   addr_error;

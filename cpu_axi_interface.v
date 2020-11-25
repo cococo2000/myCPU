@@ -143,16 +143,16 @@ always @(posedge clk)begin
         arvalid <= 1'b0;
         arsize <= 3'b0;
         inst_sram_addr_ok <= 1'b0;
-        data_sram_addr_ok <= 1'b0;
+        // data_sram_addr_ok <= 1'b0;
     end
     AR_D_VALID: begin
         arid <= 4'b1;
         araddr <= data_sram_addr;
         arvalid <= 1'b1 & ~arready;
         arsize <= {1'b0, data_sram_size};
-        if(arready && arvalid) begin
-            data_sram_addr_ok <= 1'b1;
-        end
+        // if(arready && arvalid) begin
+            // data_sram_addr_ok <= 1'b1;
+        // end
     end
     AR_I_VALID: begin
         arid <= 4'b0;
@@ -222,6 +222,21 @@ always @(posedge clk)begin
     end
     else begin
         inst_sram_data_ok <= 1'b0;
+    end
+end
+
+always @(posedge clk) begin
+    if (ar_state == AR_D_VALID && arready && arvalid) begin
+        data_sram_addr_ok <= 1'b1;
+    end
+    else if (aw_state == AW_ADDR && awready && awvalid) begin
+        data_sram_addr_ok <= 1'b1;
+    end
+    else if (ar_state == AR_IDLE) begin
+        data_sram_addr_ok <= 1'b0;
+    end
+    else if (aw_state == AW_IDLE) begin
+        data_sram_addr_ok <= 1'b0;
     end
 end
 
@@ -313,7 +328,7 @@ always @(posedge clk)begin
         awsize <= {1'b0, data_sram_size};
         awaddr <= data_sram_addr;
         if (awready && awvalid) begin
-            data_sram_addr_ok <= 1'b1;
+            // data_sram_addr_ok <= 1'b1;
             awvalid <= 1'b0;
             awsize <= 3'b0;
             awaddr <= 32'b0;

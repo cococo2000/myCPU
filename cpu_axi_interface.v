@@ -148,19 +148,22 @@ always @(*) begin
             ar_next_state = ar_state;
     end
     AR_D_VALID: begin
-        if(arready)
+        if(arready && arvalid)
             ar_next_state = AR_READY;
         else
             ar_next_state = ar_state;
     end
     AR_I_VALID: begin
-        if(arready)
+        if(arready && arvalid)
             ar_next_state = AR_READY;
         else
             ar_next_state = ar_state;
     end
     AR_READY: begin
-        ar_next_state = AR_IDLE;
+        if(rvalid && rready)
+            ar_next_state = AR_IDLE;
+        else
+            ar_next_state = ar_state;
     end
     default: begin
         ar_next_state = ar_state;

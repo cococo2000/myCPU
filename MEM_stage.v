@@ -87,14 +87,14 @@ always @(posedge clk) begin
     if (reset) begin
         ms_ready_go_r <= 1'b0;
     end
+    else if (ms_to_ws_valid && ws_allowin && !flush) begin
+        ms_ready_go_r <= 1'b0;
+    end
     else if ((data_sram_data_ok && !cancel) || ms_ex || flush) begin
         ms_ready_go_r <= 1'b1;
     end
-    else if (ms_to_ws_valid && ws_allowin) begin
-        ms_ready_go_r <= 1'b0;
-    end
 end
-assign ms_ready_go    = !(ms_store_op || ms_res_from_mem) || ms_ready_go_r;
+assign ms_ready_go    = !(ms_store_op || ms_res_from_mem) || data_sram_rdata_r_valid || data_sram_data_ok && !cancel;
 assign ms_allowin     = !ms_valid || ms_ready_go && ws_allowin;
 assign ms_to_ws_valid = ms_valid && ms_ready_go && !flush;
 always @(posedge clk) begin
@@ -186,11 +186,11 @@ always@(posedge clk)begin
     else if(flush) begin
         data_sram_rdata_r_valid <= 1'b0;
     end
-    else if(ms_valid && data_sram_data_ok)begin
-        data_sram_rdata_r_valid <= 1'b1;
-    end
     else if(ms_to_ws_valid && ws_allowin)begin
         data_sram_rdata_r_valid <= 1'b0;
+    end
+    else if(ms_valid && data_sram_data_ok)begin
+        data_sram_rdata_r_valid <= 1'b1;
     end
 end
 

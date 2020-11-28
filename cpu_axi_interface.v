@@ -91,6 +91,41 @@ always @(posedge clk) begin
         ar_state <= ar_next_state;
     end
 end
+
+always @(*) begin
+    case(ar_state) 
+    AR_IDLE: begin
+        if(inst_sram_req & ~inst_sram_wr)
+            ar_next_state = AR_I_VALID;
+        else if(data_sram_req & ~data_sram_wr && !(awaddr == data_sram_addr))
+            ar_next_state = AR_D_VALID;
+        else
+            ar_next_state = ar_state;
+    end
+    AR_D_VALID: begin
+        if(arready && arvalid)
+            ar_next_state = AR_READY;
+        else
+            ar_next_state = ar_state;
+    end
+    AR_I_VALID: begin
+        if(arready && arvalid)
+            ar_next_state = AR_READY;
+        else
+            ar_next_state = ar_state;
+    end
+    AR_READY: begin
+        if(rvalid && rready)
+            ar_next_state = AR_IDLE;
+        else
+            ar_next_state = ar_state;
+    end
+    default: begin
+        ar_next_state = ar_state;
+    end
+    endcase
+end
+
 always @(posedge clk ) begin
     if (~resetn) begin
         arvalid <= 1'b0;
@@ -137,40 +172,6 @@ always @(posedge clk ) begin
     end
 end
 
-always @(*) begin
-    case(ar_state) 
-    AR_IDLE: begin
-        if(inst_sram_req & ~inst_sram_wr)
-            ar_next_state = AR_I_VALID;
-        else if(data_sram_req & ~data_sram_wr && !(awaddr == data_sram_addr))
-            ar_next_state = AR_D_VALID;
-        else
-            ar_next_state = ar_state;
-    end
-    AR_D_VALID: begin
-        if(arready && arvalid)
-            ar_next_state = AR_READY;
-        else
-            ar_next_state = ar_state;
-    end
-    AR_I_VALID: begin
-        if(arready && arvalid)
-            ar_next_state = AR_READY;
-        else
-            ar_next_state = ar_state;
-    end
-    AR_READY: begin
-        if(rvalid && rready)
-            ar_next_state = AR_IDLE;
-        else
-            ar_next_state = ar_state;
-    end
-    default: begin
-        ar_next_state = ar_state;
-    end
-    endcase
-end
-
 assign arlen = 8'b0;
 assign arburst = 2'b1;
 assign arlock = 2'b0;
@@ -180,12 +181,11 @@ assign arprot = 3'b0;
 //////////////////////////
 ////         r        ////
 //////////////////////////
-`define R_STATE_NUM 4
+`define R_STATE_NUM 2
 reg [`R_STATE_NUM - 1: 0]r_state;
 reg [`R_STATE_NUM - 1: 0]r_next_state;
-parameter R_IDLE = 4'b0001;
-parameter R_VALID = 4'b0010;
-parameter R_READY = 4'b0100;
+parameter R_IDLE = 2'b01;
+parameter R_VALID = 2'b10;
 // parameter R_READY = 4'b1000;
 
 always @(posedge clk) begin
@@ -238,7 +238,6 @@ always @(posedge clk) begin
     end
 end
 
-
 always @(posedge clk)begin
     if (rid == 4'b0 && rvalid && rready) begin
         inst_sram_rdata <= rdata;
@@ -284,12 +283,12 @@ assign awlock = 2'b0;
 assign awcache = 4'b0;
 assign awprot = 3'b0;
 
-`define AW_STATE_NUM 4
+`define AW_STATE_NUM 3
 reg [`AW_STATE_NUM - 1: 0]aw_state;
 reg [`AW_STATE_NUM - 1: 0]aw_next_state;
-parameter AW_IDLE = 4'b0001;
-parameter AW_ADDR = 4'b0100;
-parameter AW_DATA = 4'b1000;
+parameter AW_IDLE = 3'b001;
+parameter AW_ADDR = 3'b010;
+parameter AW_DATA = 3'b100;
 
 assign wid = 4'b1;
 assign wlast = 1'b1;
@@ -302,6 +301,7 @@ always @(posedge clk) begin
         aw_state <= aw_next_state;
     end
 end
+
 always @(*) begin
     case(aw_state) 
     AW_IDLE: begin
@@ -328,6 +328,18 @@ always @(*) begin
     endcase
 end
 
+always @(posedge clk ) begin
+    if (~resetn) begin
+        awvalid <= 1'b0;
+    end
+    else if(aw_state == AW_IDLE && data_sram_req & data_sram_wr) begin
+        awvalid <= 1'b1;
+    end 
+    else if (awready && awvalid) begin
+        awvalid <= 1'b0;
+    end 
+end
+
 always @(posedge clk) begin
     if(~resetn) begin
         awaddr <= 32'b0;
@@ -341,18 +353,6 @@ always @(posedge clk) begin
         awaddr <= 32'b0;
         awsize <= 3'b0;
     end
-end
-
-always @(posedge clk ) begin
-    if (~resetn) begin
-        awvalid <= 1'b0;
-    end
-    else if(aw_state == AW_IDLE && data_sram_req & data_sram_wr) begin
-        awvalid <= 1'b1;
-    end 
-    else if (awready && awvalid) begin
-        awvalid <= 1'b0;
-    end 
 end
 
 always @(posedge clk ) begin
@@ -373,50 +373,14 @@ always @(posedge clk ) begin
     end 
 end
 
-always @(posedge clk ) begin
-    if (~resetn) begin
-        bready <= 1'b0;
-    end
-    else if( wb_state == WB_IDLE && wready && wvalid) begin
-        bready <= 1'b1;
-    end 
-    else if (bready && bvalid) begin
-        bready <= 1'b0;
-    end 
-end
-
-// always @(posedge clk)begin
-//     case(aw_state)
-//     AW_IDLE: begin
-//         wdata <= 32'b0;
-//         wstrb <= 4'b0;
-//     end
-//     AW_ADDR: begin
-//         if (awready && awvalid) begin
-//             awsize <= 3'b0;
-//         end
-//     end
-//     AW_DATA: begin
-//         wdata <= data_sram_wdata;
-//         wstrb <= data_sram_wstrb;
-//     end
-//     default: begin
-//         wdata <= wdata;
-//         wstrb <= wstrb;
-//     end
-//     endcase
-// end
 //////////////////////////
 ////        w&b       ////
 //////////////////////////
-`define WB_STATE_NUM 4
+`define WB_STATE_NUM 2
 reg [`WB_STATE_NUM - 1: 0]wb_state;
 reg [`WB_STATE_NUM - 1: 0]wb_next_state;
-parameter WB_IDLE = 4'b0001;
-// parameter WB_VALID = 4'b0010;
-parameter WB_READY = 4'b0010;
-// parameter WB_DONE = 4'b1000;
-
+parameter WB_IDLE = 2'b01;
+parameter WB_READY = 2'b10;
 
 always @(posedge clk) begin
     if(~resetn) begin
@@ -426,6 +390,7 @@ always @(posedge clk) begin
         wb_state <= wb_next_state;
     end
 end
+
 always @(*) begin
     case(wb_state) 
     WB_IDLE: begin
@@ -443,6 +408,18 @@ always @(*) begin
     default:
         wb_next_state = wb_state;
     endcase
+end
+
+always @(posedge clk ) begin
+    if (~resetn) begin
+        bready <= 1'b0;
+    end
+    else if( wb_state == WB_IDLE && wready && wvalid) begin
+        bready <= 1'b1;
+    end 
+    else if (bready && bvalid) begin
+        bready <= 1'b0;
+    end 
 end
 
 endmodule

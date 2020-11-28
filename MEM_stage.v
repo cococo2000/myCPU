@@ -94,11 +94,14 @@ always @(posedge clk) begin
         ms_ready_go_r <= 1'b1;
     end
 end
-assign ms_ready_go    = !(ms_store_op || ms_res_from_mem) || data_sram_rdata_r_valid || data_sram_data_ok && !cancel;
+assign ms_ready_go    = !(ms_store_op || ms_res_from_mem) || data_sram_rdata_r_valid || data_sram_data_ok && !cancel || ms_ex;
 assign ms_allowin     = !ms_valid || ms_ready_go && ws_allowin;
 assign ms_to_ws_valid = ms_valid && ms_ready_go && !flush;
 always @(posedge clk) begin
     if (reset) begin
+        ms_valid <= 1'b0;
+    end
+    else if (flush) begin
         ms_valid <= 1'b0;
     end
     else if (ms_allowin) begin

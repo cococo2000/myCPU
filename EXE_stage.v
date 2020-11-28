@@ -188,6 +188,9 @@ always @(posedge clk) begin
     if (reset) begin
         es_valid <= 1'b0;
     end
+    else if (flush) begin
+        es_valid <= 1'b0;
+    end
     else if (es_allowin) begin
         es_valid <= ds_to_es_valid;
     end
@@ -294,7 +297,7 @@ always @(posedge clk) begin
     else if (data_sram_req && data_sram_addr_ok)begin
         data_sram_req_r <= 1'b0;
     end
-    else if (es_to_ms_valid && ms_allowin || !es_valid)begin
+    else if (es_to_ms_valid && ms_allowin)begin
         data_sram_req_r <= 1'b0;
     end
     else if ((es_load_op || es_store_op) && ms_allowin) begin
@@ -302,7 +305,7 @@ always @(posedge clk) begin
     end
 end
 
-assign data_sram_req = data_sram_req_r; // TODO
+assign data_sram_req = data_sram_req_r && es_valid; // TODO
 assign data_sram_wr = (|data_sram_wstrb);
 assign data_sram_size = data_size_is_two ? 2'd2 :
                         data_size_is_one ? 2'd1 :

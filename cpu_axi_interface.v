@@ -95,7 +95,7 @@ end
 always @(*) begin
     case(ar_state)
         AR_IDLE: begin
-            if(data_sram_req && ~data_sram_wr && !(awaddr == data_sram_addr))
+            if(data_sram_req && ~data_sram_wr && !(awaddr[31:2] == data_sram_addr[31:2]))
                 ar_next_state = AR_D_VALID;
             else if(inst_sram_req && ~inst_sram_wr)
                 ar_next_state = AR_I_VALID;
@@ -133,7 +133,7 @@ always @(posedge clk) begin
     else if(arvalid && arready) begin
         arvalid <= 1'b0;
     end
-    else if(data_sram_req && ~data_sram_wr && !(awaddr == data_sram_addr) && ar_state == AR_IDLE) begin
+    else if(data_sram_req && ~data_sram_wr && !(awaddr[31:2] == data_sram_addr[31:2]) && ar_state == AR_IDLE) begin
         arvalid <= 1'b1;
     end
     else if(inst_sram_req && ~inst_sram_wr && ar_state == AR_IDLE)begin
@@ -155,7 +155,7 @@ always @(posedge clk) begin
         araddr <= 32'b0;
         arsize <= 3'b0;
     end
-    else if(data_sram_req && ~data_sram_wr && !(awaddr == data_sram_addr) && ar_state == AR_IDLE) begin
+    else if(data_sram_req && ~data_sram_wr && !(awaddr[31:2] == data_sram_addr[31:2]) && ar_state == AR_IDLE) begin
         arid <= 4'b1;
         araddr <= data_sram_addr;
         arsize <= {1'b0, data_sram_size};

@@ -330,7 +330,7 @@ always @(posedge clk) begin
 end
 
 always @(posedge clk) begin
-    if (ar_state == AR_I_VALID && arready && arvalid) begin
+    if (arid == 4'b0 && arready && arvalid) begin
         inst_sram_addr_ok <= 1'b1;
     end
     else begin
@@ -349,10 +349,10 @@ always @(posedge clk)begin
 end
 
 always @(posedge clk) begin
-    if (ar_state == AR_D_VALID && arready && arvalid) begin
+    if (arid == 4'b1 && arready && arvalid) begin
         data_sram_addr_ok <= 1'b1;
     end
-    else if (aw_state == AW_ADDR && awready && awvalid) begin
+    else if (awid == 4'b1 && awready && awvalid) begin
         data_sram_addr_ok <= 1'b1;
     end
     else begin
@@ -364,7 +364,7 @@ always @(posedge clk)begin
     if (rid == 4'b1 && rvalid && rready) begin
         data_sram_rdata <= rdata;
         data_sram_data_ok <= 1'b1;
-    end else if (aw_state == AW_DATA && bvalid && bready) begin
+    end else if (bid == 4'b1 && bvalid && bready) begin
         data_sram_data_ok <= 1'b1;
     end
     else begin

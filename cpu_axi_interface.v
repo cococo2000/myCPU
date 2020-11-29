@@ -78,10 +78,10 @@ module cpu_axi_interface(
 `define AR_STATE_NUM 4
 reg [`AR_STATE_NUM - 1: 0] ar_state;
 reg [`AR_STATE_NUM - 1: 0] ar_next_state;
-parameter AR_IDLE    = 4'b0001;
-parameter AR_I_VALID = 4'b0010;
-parameter AR_D_VALID = 4'b0100;
-parameter AR_READY   = 4'b1000;
+parameter AR_IDLE    = `AR_STATE_NUM'b0001;
+parameter AR_I_VALID = `AR_STATE_NUM'b0010;
+parameter AR_D_VALID = `AR_STATE_NUM'b0100;
+parameter AR_READY   = `AR_STATE_NUM'b1000;
 
 always @(posedge clk) begin
     if (~resetn) begin
@@ -184,8 +184,8 @@ assign arprot  = 3'b0;
 `define R_STATE_NUM 2
 reg [`R_STATE_NUM - 1: 0] r_state;
 reg [`R_STATE_NUM - 1: 0] r_next_state;
-parameter R_IDLE  = 2'b01;
-parameter R_VALID = 2'b10;
+parameter R_IDLE  = `R_STATE_NUM'b01;
+parameter R_VALID = `R_STATE_NUM'b10;
 
 always @(posedge clk) begin
     if(~resetn) begin
@@ -242,9 +242,9 @@ assign awprot  = 3'b0;
 `define AW_STATE_NUM 3
 reg [`AW_STATE_NUM - 1: 0] aw_state;
 reg [`AW_STATE_NUM - 1: 0] aw_next_state;
-parameter AW_IDLE = 3'b001;
-parameter AW_ADDR = 3'b010;
-parameter AW_DATA = 3'b100;
+parameter AW_IDLE = `AW_STATE_NUM'b001;
+parameter AW_ADDR = `AW_STATE_NUM'b010;
+parameter AW_DATA = `AW_STATE_NUM'b100;
 
 assign wid   = 4'b1;
 assign wlast = 1'b1;
@@ -378,8 +378,8 @@ end
 `define B_STATE_NUM 2
 reg [`B_STATE_NUM - 1: 0] b_state;
 reg [`B_STATE_NUM - 1: 0] b_next_state;
-parameter B_IDLE  = 2'b01;
-parameter B_READY = 2'b10;
+parameter B_IDLE  = `B_STATE_NUM'b01;
+parameter B_READY = `B_STATE_NUM'b10;
 
 always @(posedge clk) begin
     if(~resetn) begin

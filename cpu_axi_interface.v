@@ -229,7 +229,7 @@ always @(posedge clk) begin
 end
 
 //////////////////////////
-////         aw       ////
+////      aw & w      ////
 //////////////////////////
 
 assign awid    = 4'b1;
@@ -373,39 +373,39 @@ always @(posedge clk)begin
 end
 
 //////////////////////////
-////       w & b      ////
+////        b         ////
 //////////////////////////
-`define WB_STATE_NUM 2
-reg [`WB_STATE_NUM - 1: 0] wb_state;
-reg [`WB_STATE_NUM - 1: 0] wb_next_state;
-parameter WB_IDLE  = 2'b01;
-parameter WB_READY = 2'b10;
+`define B_STATE_NUM 2
+reg [`B_STATE_NUM - 1: 0] b_state;
+reg [`B_STATE_NUM - 1: 0] b_next_state;
+parameter B_IDLE  = 2'b01;
+parameter B_READY = 2'b10;
 
 always @(posedge clk) begin
     if(~resetn) begin
-        wb_state <= WB_IDLE;
+        b_state <= B_IDLE;
     end
     else begin
-        wb_state <= wb_next_state;
+        b_state <= b_next_state;
     end
 end
 
 always @(*) begin
-    case(wb_state)
-        WB_IDLE: begin
+    case(b_state)
+        B_IDLE: begin
             if(wvalid && wready)
-                wb_next_state = WB_READY;
+                b_next_state = B_READY;
             else
-                wb_next_state = WB_IDLE;
+                b_next_state = B_IDLE;
         end
-        WB_READY: begin
+        B_READY: begin
             if(bvalid && bready)
-                wb_next_state = WB_IDLE;
+                b_next_state = B_IDLE;
             else
-                wb_next_state = WB_READY;
+                b_next_state = B_READY;
         end
         default:
-            wb_next_state = WB_IDLE;
+            b_next_state = B_IDLE;
     endcase
 end
 
@@ -413,7 +413,7 @@ always @(posedge clk) begin
     if (~resetn) begin
         bready <= 1'b0;
     end
-    else if(wb_state == WB_IDLE && wready && wvalid) begin
+    else if(b_state == B_IDLE && wready && wvalid) begin
         bready <= 1'b1;
     end
     else if (bready && bvalid) begin

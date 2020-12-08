@@ -121,18 +121,18 @@ wire  [               2:0] w_c1   ;
 wire                       w_d1   ;
 wire                       w_v1   ;
 // read port
-wire [               3:0] r_index;
-wire [              18:0] r_vpn2 ;
-wire [               7:0] r_asid ;
-wire                      r_g    ;
-wire [              19:0] r_pfn0 ;
-wire [               2:0] r_c0   ;
-wire                      r_d0   ;
-wire                      r_v0   ;
-wire [              19:0] r_pfn1 ;
-wire [               2:0] r_c1   ;
-wire                      r_d1   ;
-wire                      r_v1   ;
+wire [                3:0] r_index;
+wire [               18:0] r_vpn2 ;
+wire [                7:0] r_asid ;
+wire                       r_g    ;
+wire [               19:0] r_pfn0 ;
+wire [                2:0] r_c0   ;
+wire                       r_d0   ;
+wire                       r_v0   ;
+wire [               19:0] r_pfn1 ;
+wire [                2:0] r_c1   ;
+wire                       r_d1   ;
+wire                       r_v1   ;
 
 tlb u_tlb(
     .clk        (clk        ),

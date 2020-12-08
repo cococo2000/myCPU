@@ -15,7 +15,25 @@ module cp0_regfile(
     input      [ 5:0] ext_int_in ,
     output     [31:0] rdata      ,
     output reg [31:0] c0_epc     ,
-    output            has_int
+    output            has_int    ,
+
+    // about TLB
+    input             tlbp       ,
+    input             tlbp_found ,
+    input      [ 3:0] index      ,
+    // tlbr
+    input             tlbr       ,
+    input      [18:0] r_vpn2     ,
+    input      [ 7:0] r_asid     ,
+    input             r_g        ,
+    input      [19:0] r_pfn0     ,
+    input      [ 2:0] r_c0       ,
+    input             r_d0       ,
+    input             r_v0       ,
+    input      [19:0] r_pfn1     ,
+    input      [ 2:0] r_c1       ,
+    input             r_d1       ,
+    input             r_v1
 );
 
 wire        count_eq_compare;
@@ -127,13 +145,13 @@ always @(posedge clk) begin
 end
 // 1:0
 assign c0_cause_1_0 = 2'b0;
-assign c0_cause = { c0_cause_bd    ,    // 31:31
-                    c0_cause_ti    ,    // 30:30
-                    c0_cause_29_16 ,    // 29;16
-                    c0_cause_ip    ,    // 15:8
-                    c0_cause_7     ,    // 7:7
-                    c0_cause_excode,    // 6:2
-                    c0_cause_1_0        // 1:0
+assign c0_cause = {c0_cause_bd    ,    // 31:31
+                   c0_cause_ti    ,    // 30:30
+                   c0_cause_29_16 ,    // 29;16
+                   c0_cause_ip    ,    // 15:8
+                   c0_cause_7     ,    // 7:7
+                   c0_cause_excode,    // 6:2
+                   c0_cause_1_0        // 1:0
                   };
 
 // CP0_EPC
@@ -174,12 +192,138 @@ always @(posedge clk) begin
 end
 
 assign count_eq_compare = c0_compare == c0_count;
+
+// CP0_ENTRYHI
+reg  [18:0] c0_entryhi_vpn2;
+wire [ 4:0] c0_entryhi_12_8;
+reg  [ 7:0] c0_entryhi_asid;
+// 31:13
+always @(posedge clk) begin
+    if (reset)
+        c0_entryhi_vpn2 <= 19'h0;
+    else if (mtc0_we && c0_addr == `CR_ENTRYHI)
+        c0_entryhi_vpn2 <= c0_wdata[31:13];
+    else if (tlbr)
+        c0_entryhi_vpn2 <= r_vpn2;
+    // else if((wb_excode == 5'h01 || wb_excode == 5'h02 || wb_excode==5'h03) && wb_ex)
+    //     // c0_entryhi_vpn2<= wb_badvaddr[31:12];
+    //     c0_entryhi_vpn2 <= wb_badvaddr[31:13];
+end
+// 12:8
+assign c0_entryhi_12_8 = 0;
+// 7:0
+always @(posedge clk) begin
+    if (reset)
+        c0_entryhi_asid <= 8'h0;
+    else if (mtc0_we && c0_addr == `CR_ENTRYHI)
+        c0_entryhi_asid <= c0_wdata[7:0];
+    else if (tlbr)
+        c0_entryhi_asid <= r_asid;
+end
+assign c0_entryhi = {c0_entryhi_vpn2,   // 31:13
+                     c0_entryhi_12_8,   // 12:8
+                     c0_entryhi_asid    // 7:0
+                    };
+
+// CP0_ENTRYLO0
+wire [ 5:0] c0_entrylo0_31_26  ;
+reg  [19:0] c0_entrylo0_pfn2   ;
+reg  [ 5:0] c0_entrylo0_C_D_V_G;
+// 31:26
+assign c0_entrylo0_31_26 = 0;
+// 25:6
+always @(posedge clk) begin
+    if (reset)
+        c0_entrylo0_pfn2 <= 20'h0;
+    else if (mtc0_we && c0_addr == `CR_ENTRYLO0)
+        c0_entrylo0_pfn2 <= c0_wdata[25:6];
+    else if (tlbr)
+        c0_entrylo0_pfn2 <= r_pfn0;
+end
+// 5:0
+always @(posedge clk) begin
+    if (reset)
+        c0_entrylo0_C_D_V_G <= 6'h0;
+    else if (mtc0_we && c0_addr == `CR_ENTRYLO0)
+        c0_entrylo0_C_D_V_G <= c0_wdata[5:0];
+    else if (tlbr)
+        c0_entrylo0_C_D_V_G <= {r_c0, r_d0, r_v0, r_g};
+end
+assign c0_entrylo0 = {c0_entrylo0_31_26  ,  // 31:26
+                      c0_entrylo0_pfn2   ,  // 25:6
+                      c0_entrylo0_C_D_V_G   // 5:0
+                     };
+
+// CP0_ENTRYLO1
+wire [ 5:0] c0_entrylo1_31_26  ;
+reg  [19:0] c0_entrylo1_pfn2   ;
+reg  [ 5:0] c0_entrylo1_C_D_V_G;
+// 31:26
+assign c0_entrylo1_31_26 = 0;
+// 25:6
+always @(posedge clk) begin
+    if (reset)
+        c0_entrylo1_pfn2 <= 20'h0;
+    else if (mtc0_we && c0_addr == `CR_ENTRYLO1)
+        c0_entrylo1_pfn2 <= c0_wdata[25:6];
+    else if (tlbr)
+        c0_entrylo1_pfn2 <= r_pfn0;
+end
+// 5:0
+always @(posedge clk) begin
+    if (reset)
+        c0_entrylo1_C_D_V_G <= 6'h0;
+    else if (mtc0_we && c0_addr == `CR_ENTRYLO1)
+        c0_entrylo1_C_D_V_G <= c0_wdata[5:0];
+    else if (tlbr)
+        c0_entrylo1_C_D_V_G <= {r_c0, r_d0, r_v0, r_g};
+end
+assign c0_entrylo1 = {c0_entrylo1_31_26  ,  // 31:26
+                      c0_entrylo1_pfn2   ,  // 25:6
+                      c0_entrylo1_C_D_V_G   // 5:0
+                     };
+
+// CP0_INDEX
+reg         c0_index_p    ;
+wire [26:0] c0_index_30_4 ;
+reg  [ 3:0] c0_index_index;
+// 31:31
+always@(posedge clk) begin
+    if (reset)
+        c0_index_p <= 1'b0;
+    // else if (mtc0_we && c0_addr == `CR_INDEX)
+        //c0_index_p <= c0_wdata[31];
+    else if (tlbp && !tlbp_found)
+        c0_index_p <= 1;
+    else if (tlbp && tlbp_found)
+        c0_index_p <= 0;
+end
+// 30:4
+assign c0_index_30_4 = 0;
+// 3:0
+always@(posedge clk) begin
+    if (reset)
+        c0_index_index <= 4'h0;
+    else if (mtc0_we && c0_addr == `CR_INDEX)
+        c0_index_index <= c0_wdata[3:0];
+    else if (tlbp && tlbp_found)
+        c0_index_index <= index;
+end
+assign c0_index = {c0_index_p    ,  // 31:31
+                   c0_index_30_4 ,  // 30:4
+                   c0_index_index   // 3:0
+                  };
+
 // read data
-assign rdata = (c0_addr == `CR_STATUS ) ? c0_status  :
-               (c0_addr == `CR_CAUSE  ) ? c0_cause   :
-               (c0_addr == `CR_EPC    ) ? c0_epc     :
-               (c0_addr == `CR_COMPARE) ? c0_compare :
-               (c0_addr == `CR_BADVADDR)? c0_badvaddr:
+assign rdata = (c0_addr == `CR_STATUS  ) ? c0_status  :
+               (c0_addr == `CR_CAUSE   ) ? c0_cause   :
+               (c0_addr == `CR_EPC     ) ? c0_epc     :
+               (c0_addr == `CR_COMPARE ) ? c0_compare :
+               (c0_addr == `CR_BADVADDR) ? c0_badvaddr:
+               (c0_addr == `CR_ENTRYHI ) ? c0_entryhi :
+               (c0_addr == `CR_ENTRYLO0) ? c0_entrylo0:
+               (c0_addr == `CR_ENTRYLO1) ? c0_entrylo1:
+               (c0_addr == `CR_INDEX   ) ? c0_index   :
                32'b0;
 
 // wire has_int;

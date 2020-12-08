@@ -146,9 +146,13 @@ wire        inst_syscall;
 wire        inst_nop;
 wire        inst_break;
 wire        reserved_inst;
+// lab14 tlb instruction
+wire        inst_tlbp;
+wire        inst_tlbr;
+wire        inst_tlbwi;
 // write reg dest
-wire        dst_is_r31;  
-wire        dst_is_rt;   
+wire        dst_is_r31;
+wire        dst_is_rt;
 
 // regfiles
 wire [ 3:0] rf_we   ;
@@ -350,11 +354,20 @@ assign inst_syscall = op_d[6'h00] & func_d[6'h0c];
 // lab9
 assign inst_nop     = ds_inst == 32'b0;
 assign inst_break   = op_d[6'h00] & func_d[6'h0d];
-assign reserved_inst= ~(inst_addu | inst_subu | inst_slt | inst_sltu | inst_and | inst_or | inst_xor | inst_nor | inst_sll | inst_srl | inst_sra | inst_addiu | inst_lui | inst_lw | inst_sw | inst_beq | inst_bne | inst_jal | inst_jr |
-  inst_add | inst_addi | inst_sub | inst_slti | inst_sltiu | inst_andi | inst_ori | inst_xori | inst_sllv | inst_srav | inst_srlv | inst_mult | inst_multu | inst_div | inst_divu | inst_mfhi | inst_mflo | inst_mthi | inst_mtlo |
-  inst_bgez | inst_bgtz | inst_blez | inst_bltz | inst_j | inst_bltzal | inst_bgezal | inst_jalr | inst_lb | inst_lbu | inst_lh | inst_lhu | inst_lwl | inst_lwr | inst_sb | inst_sh | inst_swl | inst_swr |
-  inst_mtc0 | inst_mfc0 | inst_eret | inst_syscall | inst_nop | inst_break);
 
+// lab14 tlb instruction
+assign inst_tlbp    = op_d[6'h10] & ds_inst[25] & (ds_inst[24:6] == 0) & func_d[6'h08];
+assign inst_tlbr    = op_d[6'h10] & ds_inst[25] & (ds_inst[24:6] == 0) & func_d[6'h01];
+assign inst_tlbwi   = op_d[6'h10] & ds_inst[25] & (ds_inst[24:6] == 0) & func_d[6'h02];
+
+assign reserved_inst= ~(inst_addu | inst_subu | inst_slt | inst_sltu | inst_and | inst_or |
+ inst_xor | inst_nor | inst_sll | inst_srl | inst_sra | inst_addiu | inst_lui | inst_lw |
+ inst_sw | inst_beq | inst_bne | inst_jal | inst_jr | inst_add | inst_addi | inst_sub | inst_slti |
+ inst_sltiu | inst_andi | inst_ori | inst_xori | inst_sllv | inst_srav | inst_srlv | inst_mult |
+ inst_multu | inst_div | inst_divu | inst_mfhi | inst_mflo | inst_mthi | inst_mtlo | inst_bgez |
+ inst_bgtz | inst_blez | inst_bltz | inst_j | inst_bltzal | inst_bgezal | inst_jalr | inst_lb |
+ inst_lbu | inst_lh | inst_lhu | inst_lwl | inst_lwr | inst_sb | inst_sh | inst_swl | inst_swr |
+ inst_mtc0 | inst_mfc0 | inst_eret | inst_syscall | inst_nop | inst_break | inst_tlbp | inst_tlbr | inst_tlbwi);
 
 assign alu_op[ 0] = inst_addu | inst_addiu | inst_lw | inst_sw | inst_jal | inst_add | inst_addi |
                     inst_lb   | inst_lbu   | inst_lh | inst_lhu| inst_lwl | inst_lwr | inst_sb   |

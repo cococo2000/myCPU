@@ -18,6 +18,11 @@ module cp0_regfile(
     output            has_int    ,
 
     // about TLB
+    output     [31:0] c0_entryhi ,
+    output     [31:0] c0_entrylo0,
+    output     [31:0] c0_entrylo1,
+    output     [31:0] c0_index   ,
+
     input             tlbp       ,
     input             tlbp_found ,
     input      [ 3:0] index      ,

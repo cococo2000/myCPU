@@ -107,7 +107,7 @@ assign debug_wb_rf_wdata = rf_wdata;
 
 // TLB module
 // write port
-wire                       we     ;     //w(rite) e(nable)
+wire                       we     ;     // w(rite) e(nable)
 wire  [               3:0] w_index;
 wire  [              18:0] w_vpn2 ;
 wire  [               7:0] w_asid ;
@@ -120,7 +120,6 @@ wire  [              19:0] w_pfn1 ;
 wire  [               2:0] w_c1   ;
 wire                       w_d1   ;
 wire                       w_v1   ;
-
 // read port
 wire [               3:0] r_index;
 wire [              18:0] r_vpn2 ;
@@ -148,7 +147,7 @@ tlb u_tlb(
     .s0_c       (s0_c       ),
     .s0_d       (s0_d       ),
     .s0_v       (s0_v       ),
- 
+
     // search port 1
     .s1_vpn2    (s1_vpn2    ),
     .s1_odd_page(s1_odd_page),
@@ -159,7 +158,7 @@ tlb u_tlb(
     .s1_c       (s1_c       ),
     .s1_d       (s1_d       ),
     .s1_v       (s1_v       ),
- 
+
     // write port
     .we         (we         ),      // w(rite) e(nable)
     .w_index    (w_index    ),
@@ -174,7 +173,7 @@ tlb u_tlb(
     .w_c1       (w_c1       ),
     .w_d1       (w_d1       ),
     .w_v1       (w_v1       ),
- 
+
     // read port
     .r_index    (r_index    ),
     .r_vpn2     (r_vpn2     ),

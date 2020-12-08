@@ -153,6 +153,8 @@ wire        inst_tlbwi;
 // write reg dest
 wire        dst_is_r31;
 wire        dst_is_rt;
+// refetch
+wire        refetch;
 
 // regfiles
 wire [ 3:0] rf_we   ;
@@ -371,7 +373,7 @@ assign reserved_inst= ~(inst_addu | inst_subu | inst_slt | inst_sltu | inst_and 
 
 assign alu_op[ 0] = inst_addu | inst_addiu | inst_lw | inst_sw | inst_jal | inst_add | inst_addi |
                     inst_lb   | inst_lbu   | inst_lh | inst_lhu| inst_lwl | inst_lwr | inst_sb   |
-                    inst_sh   | inst_swl   | inst_swr| inst_bltzal| inst_bgezal|inst_jalr;
+                    inst_sh   | inst_swl   | inst_swr| inst_bltzal | inst_bgezal | inst_jalr;
 assign alu_op[ 1] = inst_subu | inst_sub;
 assign alu_op[ 2] = inst_slt  | inst_slti;
 assign alu_op[ 3] = inst_sltu | inst_sltiu;
@@ -406,7 +408,8 @@ assign gr_we        = ~inst_sw   & ~inst_beq  & ~inst_bne  & ~inst_jr    &
                       ~inst_div  & ~inst_divu & ~inst_bgez & ~inst_bgtz  &
                       ~inst_blez & ~inst_bltz & ~inst_j    & ~inst_sb    &
                       ~inst_sh   & ~inst_swl  & ~inst_swr  & ~inst_mtc0  &
-                      ~inst_syscall & ~inst_eret & ~inst_nop & ~inst_break;
+                      ~inst_syscall & ~inst_eret & ~inst_nop & ~inst_break &
+                      ~inst_tlbp & ~inst_tlbr & ~inst_tlbwi;
 
 assign ld_inst      = { inst_lw     ,
                         inst_lb     ,
@@ -436,6 +439,8 @@ assign md_inst      = { inst_mult   ,
 assign dest         = dst_is_r31 ? 5'd31 :
                       dst_is_rt  ? rt    :
                                    rd;
+
+assign refetch = inst_tlbr | inst_tlbwi;
 
 // block & forward parts
 assign rf_raddr1 = rs;

@@ -54,7 +54,9 @@ module wb_stage(
     input  [19:0] r_pfn1 ,
     input  [ 2:0] r_c1   ,
     input         r_d1   ,
-    input         r_v1
+    input         r_v1   ,
+
+    output        start_refetch
 );
 
 reg         ws_valid;
@@ -103,6 +105,7 @@ wire [31:0] cp0_rdata;
 wire        eret_flush;
 assign eret_flush = ws_valid && ws_eret;
 assign ws_mt_entryhi = ws_mtc0 && (c0_raddr[7:3] == `CR_ENTRYHI);
+assign start_refetch =  (ws_tlbwi || ws_tlbr) && ws_valid;
 
 wire [4 :0] rf_waddr;
 wire [31:0] rf_wdata;

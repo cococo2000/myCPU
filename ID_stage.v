@@ -444,7 +444,7 @@ assign dest         = dst_is_r31 ? 5'd31 :
                       dst_is_rt  ? rt    :
                                    rd;
 
-assign refetch = inst_tlbr | inst_tlbwi;
+assign refetch = (inst_tlbr | inst_tlbwi) && ds_valid;
 
 // block & forward parts
 assign rf_raddr1 = rs;

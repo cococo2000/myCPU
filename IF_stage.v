@@ -32,7 +32,8 @@ module if_stage(
     input         ws_ex  ,
 
     // refetch
-    input         refetch
+    input         refetch,
+    input         start_refetch
 );
 
 reg         fs_valid;
@@ -76,6 +77,23 @@ assign fs_to_ds_bus = {fs_bd,       // 70:70
 reg        ws_ex_r;
 reg        ws_eret_r;
 reg        cancel;
+
+// tlbwi & tlbr refetch
+reg        refetch_r;
+reg [31:0] refetch_pc;
+always @(posedge clk) begin
+    if (reset) begin
+        refetch_r  <= 1'b0;
+        refetch_pc <= 32'b0;
+    end
+    else if (refetch) begin
+        refetch_r <= 1'b1;
+        refetch_pc <= fs_pc;
+    end
+    else if (start_refetch) begin
+        refetch_r <= 1'b0;
+    end
+end
 
 // pre-IF stage
 always @(posedge clk) begin
@@ -156,6 +174,9 @@ always @(posedge clk) begin
     if (reset) begin
         nextpc_r <= seq_pc;
     end
+    else if (refetch) begin
+        nextpc_r <= fs_pc;
+    end
     else if (ws_ex) begin
         nextpc_r <= 32'hbfc00380;
     end
@@ -184,7 +205,8 @@ end
 assign pf_ready_go  = pf_ready_go_r;
 assign to_fs_valid  = ~reset && pf_ready_go;
 assign seq_pc       = fs_pc + 3'h4;
-assign nextpc       = ws_ex_r      ? 32'hbfc00380 :
+assign nextpc       = refetch_r    ? refetch_pc   :
+                      ws_ex_r      ? 32'hbfc00380 :
                       ws_eret_r    ? cp0_epc      :
                       br_taken_r   ? br_target_r  :
                                      seq_pc;

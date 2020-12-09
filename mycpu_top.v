@@ -199,6 +199,9 @@ wire        r_v1       ;
 wire [18:0] entryhi_vpn2;
 wire [ 5:0] tlbp_bus    ;
 
+wire refetch;       // ds -> fs
+wire start_refetch; // ws -> fs
+
 // IF stage
 if_stage if_stage(
     .clk              (aclk             ),
@@ -231,7 +234,8 @@ if_stage if_stage(
     .ws_eret          (ws_eret          ),
     .ws_ex            (ws_ex            ),
 
-    .refetch          (refetch          )
+    .refetch          (refetch          ),
+    .start_refetch    (start_refetch    )
 );
 // ID stage
 id_stage id_stage(
@@ -386,7 +390,9 @@ wb_stage wb_stage(
     .r_pfn1      (r_pfn1 ),
     .r_c1        (r_c1   ),
     .r_d1        (r_d1   ),
-    .r_v1        (r_v1   )
+    .r_v1        (r_v1   ),
+
+    .start_refetch(start_refetch)
 );
 
 cpu_axi_interface cpu_axi_interface(

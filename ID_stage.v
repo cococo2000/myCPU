@@ -19,8 +19,10 @@ module id_stage(
     // foward_recv
     input [`ES_FWD_BUS_WD    -1:0] es_fwd_bus    ,
     input [`MS_FWD_BUS_WD    -1:0] ms_fwd_bus    ,
-    input                          flush,
-    input                          has_int
+    input                          flush         ,
+    input                          has_int       ,
+    // refetch
+    output                         refetch
 );
 
 reg         ds_valid   ;
@@ -153,8 +155,6 @@ wire        inst_tlbwi;
 // write reg dest
 wire        dst_is_r31;
 wire        dst_is_rt;
-// refetch
-wire        refetch;
 
 // regfiles
 wire [ 3:0] rf_we   ;

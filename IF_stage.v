@@ -29,7 +29,10 @@ module if_stage(
 
     input  [31:0] cp0_epc,
     input         ws_eret,
-    input         ws_ex
+    input         ws_ex  ,
+
+    // refetch
+    input         refetch
 );
 
 reg         fs_valid;

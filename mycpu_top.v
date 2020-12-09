@@ -229,7 +229,9 @@ if_stage if_stage(
 
     .cp0_epc          (cp0_epc          ),
     .ws_eret          (ws_eret          ),
-    .ws_ex            (ws_ex            )
+    .ws_ex            (ws_ex            ),
+
+    .refetch          (refetch          )
 );
 // ID stage
 id_stage id_stage(
@@ -252,7 +254,9 @@ id_stage id_stage(
     .es_fwd_bus     (es_fwd_bus     ),
     .ms_fwd_bus     (ms_fwd_bus     ),
     .flush          (flush          ),
-    .has_int        (has_int        )
+    .has_int        (has_int        ),
+    // refetch
+    .refetch        (refetch        )
 );
 // EXE stage
 exe_stage exe_stage(

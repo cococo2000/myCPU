@@ -10,6 +10,7 @@ module wb_stage(
     input  [`MS_TO_WS_BUS_WD -1:0]  ms_to_ws_bus  ,
     // to rf: for write back and forward bus (to ds)
     output [`WS_TO_RF_BUS_WD -1:0]  ws_to_rf_bus  ,
+    output                          ws_mt_entryhi ,
     // trace debug interface
     output [31:0] debug_wb_pc      ,
     output [ 3:0] debug_wb_rf_wen  ,
@@ -96,11 +97,12 @@ assign wb_badvaddr = ms_badvaddr;
 assign {ws_eret,   // 10:10
         ws_mtc0,   // 9:9
         ws_mfc0,   // 8:8
-        c0_raddr  // 7:0
+        c0_raddr   // 7:0
        } = c0_bus & {11{ws_valid}};
 wire [31:0] cp0_rdata;
 wire        eret_flush;
 assign eret_flush = ws_valid && ws_eret;
+assign ws_mt_entryhi = ws_mtc0 && (c0_raddr[7:3] == `CR_ENTRYHI);
 
 wire [4 :0] rf_waddr;
 wire [31:0] rf_wdata;

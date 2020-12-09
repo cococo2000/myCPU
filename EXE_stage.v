@@ -27,6 +27,9 @@ module exe_stage(
     input         data_sram_addr_ok,
     // forward
     output [`ES_FWD_BUS_WD -1:0]   es_fwd_bus,
+    // block tlbp
+    input  ms_mt_entryhi,
+    input  ws_mt_entryhi,
 
     input  es_data_valid,
     output es_ex,
@@ -201,10 +204,11 @@ always @(posedge clk) begin
     end
 end
 
-assign es_ready_go    = !(es_div || es_divu || es_load_op || es_store_op) ||
+assign es_ready_go    = !(es_div || es_divu || es_load_op || es_store_op || es_tlbp) ||
                          (es_div && div_done) || (es_divu && divu_done) ||
                          ((es_load_op || es_store_op) && es_ready_go_r) ||
-                         !es_data_valid;
+                         (es_tlbp && !(ms_mt_entryhi || ws_mt_entryhi)) ||
+                        !es_data_valid;
 assign es_allowin     = !es_valid || es_ready_go && ms_allowin;
 assign es_to_ms_valid =  es_valid && es_ready_go && !flush;
 always @(posedge clk) begin

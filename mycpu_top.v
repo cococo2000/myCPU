@@ -111,6 +111,10 @@ wire [`BR_BUS_WD       -1:0] br_bus      ;
 wire [`ES_FWD_BUS_WD   -1:0] es_fwd_bus;
 wire [`MS_FWD_BUS_WD   -1:0] ms_fwd_bus;
 
+// block
+wire ms_mt_entryhi;
+wire ws_mt_entryhi;
+
 // exception
 wire [31:0] cp0_epc      ;
 wire        ws_eret      ;
@@ -278,6 +282,10 @@ exe_stage exe_stage(
     .data_sram_addr_ok(data_sram_addr_ok),
     // forward_bus
     .es_fwd_bus       (es_fwd_bus       ),
+    // block tlbp
+    .ms_mt_entryhi    (ms_mt_entryhi    ),
+    .ws_mt_entryhi    (ws_mt_entryhi    ),
+
     .es_data_valid    (es_data_valid    ),
     .es_ex            (es_ex            ),
     .flush            (flush            ),
@@ -315,6 +323,7 @@ mem_stage mem_stage(
     .data_sram_rdata  (data_sram_rdata  ),
     // forward_bus
     .ms_fwd_bus       (ms_fwd_bus       ),
+    .ms_mt_entryhi    (ms_mt_entryhi    ),
     .ms_flush         (ms_flush         ),
     .flush            (flush            )
 );
@@ -329,6 +338,7 @@ wb_stage wb_stage(
     .ms_to_ws_bus     (ms_to_ws_bus     ),
     // to rf: for write back and forward bus (to ds)
     .ws_to_rf_bus     (ws_to_rf_bus     ),
+    .ws_mt_entryhi    (ws_mt_entryhi    ),
     // trace debug interface
     .debug_wb_pc      (debug_wb_pc      ),
     .debug_wb_rf_wen  (debug_wb_rf_wen  ),

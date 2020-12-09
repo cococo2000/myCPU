@@ -18,12 +18,12 @@ module exe_stage(
     // output [31:0] data_sram_addr ,
     // output [31:0] data_sram_wdata,
     // sram like interface
-    output        data_sram_req,
-    output        data_sram_wr,
-    output [ 1:0] data_sram_size,
-    output [ 3:0] data_sram_wstrb,
-    output [31:0] data_sram_addr,
-    output [31:0] data_sram_wdata,
+    output        data_sram_req    ,
+    output        data_sram_wr     ,
+    output [ 1:0] data_sram_size   ,
+    output [ 3:0] data_sram_wstrb  ,
+    output [31:0] data_sram_addr   ,
+    output [31:0] data_sram_wdata  ,
     input         data_sram_addr_ok,
     // forward
     output [`ES_FWD_BUS_WD -1:0]   es_fwd_bus,
@@ -36,14 +36,14 @@ module exe_stage(
     output [ 5:0] tlbp_bus,
     input  [18:0] entryhi_vpn2,
     // search port 1
-    output [18:0] s1_vpn2,
+    output [18:0] s1_vpn2    ,
     output        s1_odd_page,
     // output [ 7:0] s1_asid,
-    input         s1_found,
-    input  [ 3:0] s1_index,
-    input  [19:0] s1_pfn,
-    input  [ 2:0] s1_c,
-    input         s1_d,
+    input         s1_found   ,
+    input  [ 3:0] s1_index   ,
+    input  [19:0] s1_pfn     ,
+    input  [ 2:0] s1_c       ,
+    input         s1_d       ,
     input         s1_v
 );
 
@@ -90,9 +90,9 @@ wire        es_tlbp;
 wire        es_tlbwi;
 wire        es_tlbr;
 assign {
-        es_tlbp         , // 209
-        es_tlbwi        , // 208
-        es_tlbr         , // 207
+        es_tlbp         , // 209:209
+        es_tlbwi        , // 208:208
+        es_tlbr         , // 207:207
         ds_badvaddr     , // 206:175
         c0_bus          , // 174:164
         es_bd           , // 163:163
@@ -172,8 +172,8 @@ assign es_res = es_mfhi ? hi :
 assign es_overflow = es_alu_overflow && es_overflow_inst;
 assign es_res_from_mem = es_load_op;
 assign es_to_ms_bus = {
-                       es_tlbwi       ,  // 130
-                       es_tlbr        ,  // 129
+                       es_tlbwi       ,  // 130:130
+                       es_tlbr        ,  // 129:129
                        es_store_op    ,  // 128:128
                        es_badvaddr    ,  // 127:96
                        c0_bus         ,  // 95:85
@@ -328,7 +328,7 @@ always @(posedge clk) begin
     end
 end
 
-assign data_sram_req = data_sram_req_r && es_valid; // TODO
+assign data_sram_req = data_sram_req_r && es_valid;
 assign data_sram_wr = (|data_sram_wstrb);
 assign data_sram_size = data_size_is_two ? 2'd2 :
                         data_size_is_one ? 2'd1 :

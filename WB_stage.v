@@ -80,8 +80,8 @@ wire [31:0] wb_badvaddr;
 wire        ws_tlbwi;
 wire        ws_tlbr;
 assign {
-        ws_tlbwi       ,  // 124
-        ws_tlbr        ,  // 123
+        ws_tlbwi       ,  // 124:124
+        ws_tlbr        ,  // 123:123
         ms_badvaddr    ,  // 122:91
         c0_bus         ,  // 90:80
         ws_bd          ,  // 79:79

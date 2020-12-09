@@ -215,7 +215,7 @@ always @(posedge clk) begin
     //     c0_entryhi_vpn2 <= wb_badvaddr[31:13];
 end
 // 12:8
-assign c0_entryhi_12_8 = 0;
+assign c0_entryhi_12_8 = 5'b0;
 // 7:0
 always @(posedge clk) begin
     if (reset)
@@ -238,7 +238,7 @@ reg         c0_entrylo0_D    ;
 reg         c0_entrylo0_V    ;
 reg         c0_entrylo0_G    ;
 // 31:26
-assign c0_entrylo0_31_26 = 0;
+assign c0_entrylo0_31_26 = 6'b0;
 // 25:6
 always @(posedge clk) begin
     if (reset)
@@ -261,9 +261,9 @@ end
 assign c0_entrylo0 = {c0_entrylo0_31_26,  // 31:26
                       c0_entrylo0_pfn0 ,  // 25:6
                       c0_entrylo0_C    ,  // 5:3
-                      c0_entrylo0_D    ,  // 2
-                      c0_entrylo0_V    ,  // 1
-                      c0_entrylo0_G       // 0
+                      c0_entrylo0_D    ,  // 2:2
+                      c0_entrylo0_V    ,  // 1:1
+                      c0_entrylo0_G       // 0:0
                      };
 
 // CP0_ENTRYLO1
@@ -274,7 +274,7 @@ reg         c0_entrylo1_D    ;
 reg         c0_entrylo1_V    ;
 reg         c0_entrylo1_G    ;
 // 31:26
-assign c0_entrylo1_31_26 = 0;
+assign c0_entrylo1_31_26 = 6'b0;
 // 25:6
 always @(posedge clk) begin
     if (reset)
@@ -297,9 +297,9 @@ end
 assign c0_entrylo1 = {c0_entrylo1_31_26,  // 31:26
                       c0_entrylo1_pfn1 ,  // 25:6
                       c0_entrylo1_C    ,  // 5:3
-                      c0_entrylo1_D    ,  // 2
-                      c0_entrylo1_V    ,  // 1
-                      c0_entrylo1_G       // 0
+                      c0_entrylo1_D    ,  // 2:2
+                      c0_entrylo1_V    ,  // 1:1
+                      c0_entrylo1_G       // 0:0
                      };
 
 // CP0_INDEX
@@ -311,14 +311,14 @@ always@(posedge clk) begin
     if (reset)
         c0_index_p <= 1'b0;
     // else if (mtc0_we && c0_addr == `CR_INDEX)
-        //c0_index_p <= c0_wdata[31];
+        // c0_index_p <= c0_wdata[31];
     else if (tlbp && !tlbp_found)
-        c0_index_p <= 1;
+        c0_index_p <= 1'b1;
     else if (tlbp && tlbp_found)
-        c0_index_p <= 0;
+        c0_index_p <= 1'b0;
 end
 // 30:4
-assign c0_index_30_4 = 0;
+assign c0_index_30_4 = 27'b0;
 // 3:0
 always@(posedge clk) begin
     if (reset)

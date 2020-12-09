@@ -226,14 +226,14 @@ wire [10:0] c0_bus;
 
 assign c0_raddr = {rd, cp0r_sel};
 assign c0_bus = {inst_eret,   // 10:10
-                   inst_mtc0,   // 9:9
-                   inst_mfc0,   // 8:8
-                   c0_raddr    // 7:0
-                  };
+                 inst_mtc0,   // 9:9
+                 inst_mfc0,   // 8:8
+                 c0_raddr     // 7:0
+                };
 assign ds_to_es_bus = {
-                       inst_tlbp    , // 209
-                       inst_tlbwi   , // 208
-                       inst_tlbr    , // 207
+                       inst_tlbp    , // 209:209
+                       inst_tlbwi   , // 208:208
+                       inst_tlbr    , // 207:207
                        ds_badvaddr  , // 206:175
                        c0_bus       , // 174:164
                        ds_bd        , // 163:163

@@ -219,10 +219,10 @@ assign pf_ready_go  = pf_ready_go_r;
 assign to_fs_valid  = ~reset && pf_ready_go;
 assign seq_pc       = fs_pc + 3'h4;
 assign nextpc       = start_refetch_r ? refetch_pc   :
-                      ws_ex_r      ? 32'hbfc00380 :
-                      ws_eret_r    ? cp0_epc      :
-                      br_taken_r   ? br_target_r  :
-                                     seq_pc;
+                      ws_ex_r         ? 32'hbfc00380 :
+                      ws_eret_r       ? cp0_epc      :
+                      br_taken_r      ? br_target_r  :
+                                        seq_pc;
 
 // assign inst_sram_en    = to_fs_valid && fs_allowin;
 // assign inst_sram_wen   = 4'h0;

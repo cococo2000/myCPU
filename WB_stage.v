@@ -17,8 +17,38 @@ module wb_stage(
     output [31:0] debug_wb_rf_wdata,
     output [31:0] cp0_epc,
     output        ws_eret,
-    output        ws_ex,
-    output has_int
+    output        ws_ex  ,
+    output        has_int,
+
+    // TLB
+    input  [ 5:0] tlbp_bus,
+    // write port
+    output        we     ,
+    output [ 3:0] w_index,
+    output [18:0] w_vpn2 ,
+    output [ 7:0] w_asid ,
+    output        w_g    ,
+    output [19:0] w_pfn0 ,
+    output [ 2:0] w_c0   ,
+    output        w_d0   ,
+    output        w_v0   ,
+    output [19:0] w_pfn1 ,
+    output [ 2:0] w_c1   ,
+    output        w_d1   ,
+    output        w_v1   ,
+    // read port
+    output [ 3:0] r_index,
+    input  [18:0] r_vpn2 ,
+    input  [ 7:0] r_asid ,
+    input         r_g    ,
+    input  [19:0] r_pfn0 ,
+    input  [ 2:0] r_c0   ,
+    input         r_d0   ,
+    input         r_v0   ,
+    input  [19:0] r_pfn1 ,
+    input  [ 2:0] r_c1   ,
+    input         r_d1   ,
+    input         r_v1
 );
 
 reg         ws_valid;
@@ -41,7 +71,9 @@ wire        ws_bd;
 wire        ms_ex;
 wire [ 4:0] ms_excode;
 wire [31:0] ms_badvaddr;
-wire [31: 0] wb_badvaddr;
+wire [31:0] wb_badvaddr;
+wire        ws_tlbwi;
+wire        ws_tlbr;
 assign {
         ms_badvaddr    , // 122:91
         c0_bus         ,  // 90:80
@@ -76,7 +108,6 @@ wire [ 4:0] ws_excode;
 assign ws_ex = ws_valid && ms_ex;
 assign ws_excode = {5{ws_ex}} & ms_excode;
 
-
 assign ws_ready_go = 1'b1;
 assign ws_allowin  = !ws_valid || ws_ready_go;
 always @(posedge clk) begin
@@ -106,88 +137,57 @@ assign debug_wb_rf_wnum  = ws_dest;
 assign debug_wb_rf_wdata = rf_wdata;
 
 // TLB module
-// write port
-wire                       we     ;     // w(rite) e(nable)
-wire  [               3:0] w_index;
-wire  [              18:0] w_vpn2 ;
-wire  [               7:0] w_asid ;
-wire                       w_g    ;
-wire  [              19:0] w_pfn0 ;
-wire  [               2:0] w_c0   ;
-wire                       w_d0   ;
-wire                       w_v0   ;
-wire  [              19:0] w_pfn1 ;
-wire  [               2:0] w_c1   ;
-wire                       w_d1   ;
-wire                       w_v1   ;
-// read port
-wire [                3:0] r_index;
-wire [               18:0] r_vpn2 ;
-wire [                7:0] r_asid ;
-wire                       r_g    ;
-wire [               19:0] r_pfn0 ;
-wire [                2:0] r_c0   ;
-wire                       r_d0   ;
-wire                       r_v0   ;
-wire [               19:0] r_pfn1 ;
-wire [                2:0] r_c1   ;
-wire                       r_d1   ;
-wire                       r_v1   ;
+// wire                       we     ;     // w(rite) e(nable)
+// wire  [               3:0] w_index;
+// wire  [              18:0] w_vpn2 ;
+// wire  [               7:0] w_asid ;
+// wire                       w_g    ;
+// wire  [              19:0] w_pfn0 ;
+// wire  [               2:0] w_c0   ;
+// wire                       w_d0   ;
+// wire                       w_v0   ;
+// wire  [              19:0] w_pfn1 ;
+// wire  [               2:0] w_c1   ;
+// wire                       w_d1   ;
+// wire                       w_v1   ;
 
-tlb u_tlb(
-    .clk        (clk        ),
+// wire [                3:0] r_index;
+// wire [               18:0] r_vpn2 ;
+// wire [                7:0] r_asid ;
+// wire                       r_g    ;
+// wire [               19:0] r_pfn0 ;
+// wire [                2:0] r_c0   ;
+// wire                       r_d0   ;
+// wire                       r_v0   ;
+// wire [               19:0] r_pfn1 ;
+// wire [                2:0] r_c1   ;
+// wire                       r_d1   ;
+// wire                       r_v1   ;
 
-    // search port 0
-    .s0_vpn2    (s0_vpn2    ),
-    .s0_odd_page(s0_odd_page),
-    .s0_asid    (s0_asid    ),
-    .s0_found   (s0_found   ),
-    .s0_index   (s0_index   ),
-    .s0_pfn     (s0_pfn     ),
-    .s0_c       (s0_c       ),
-    .s0_d       (s0_d       ),
-    .s0_v       (s0_v       ),
+wire [31:0] c0_entryhi ;
+wire [31:0] c0_entrylo0;
+wire [31:0] c0_entrylo1;
+wire [31:0] c0_index   ;
 
-    // search port 1
-    .s1_vpn2    (s1_vpn2    ),
-    .s1_odd_page(s1_odd_page),
-    .s1_asid    (s1_asid    ),
-    .s1_found   (s1_found   ),
-    .s1_index   (s1_index   ),
-    .s1_pfn     (s1_pfn     ),
-    .s1_c       (s1_c       ),
-    .s1_d       (s1_d       ),
-    .s1_v       (s1_v       ),
+wire es_tlbp;
+wire tlbp_found;
+wire tlbp_index;
+assign {es_tlbp   ,
+        tlbp_found,
+        tlbp_index
+        } = tlbp_bus;
 
-    // write port
-    .we         (we         ),      // w(rite) e(nable)
-    .w_index    (w_index    ),
-    .w_vpn2     (w_vpn2     ),
-    .w_asid     (w_asid     ),
-    .w_g        (w_g        ),
-    .w_pfn0     (w_pfn0     ),
-    .w_c0       (w_c0       ),
-    .w_d0       (w_d0       ),
-    .w_v0       (w_v0       ),
-    .w_pfn1     (w_pfn1     ),
-    .w_c1       (w_c1       ),
-    .w_d1       (w_d1       ),
-    .w_v1       (w_v1       ),
+assign we      = ws_tlbwi;
+assign w_index = c0_index[3:0];
+assign w_vpn2  = c0_entryhi[31:13];
+assign w_asid  = c0_entryhi[7:0];
+assign w_g     = c0_entrylo0[0] && c0_entrylo1[0];
+assign w_pfn0  = c0_entrylo0[25:6];
+assign {w_c0, w_d0, w_v0} = c0_entrylo0[5:1];
+assign w_pfn1  = c0_entrylo1[25:6];
+assign {w_c1, w_d1, w_v1} = c0_entrylo1[5:1];
 
-    // read port
-    .r_index    (r_index    ),
-    .r_vpn2     (r_vpn2     ),
-    .r_asid     (r_asid     ),
-    .r_g        (r_g        ),
-    .r_pfn0     (r_pfn0     ),
-    .r_c0       (r_c0       ),
-    .r_d0       (r_d0       ),
-    .r_v0       (r_v0       ),
-    .r_pfn1     (r_pfn1     ),
-    .r_c1       (r_c1       ),
-    .r_d1       (r_d1       ),
-    .r_v1       (r_v1       )
-);
+assign r_index = c0_index[3:0];
 
 // int signals
 wire [5:0] ext_int_in;
@@ -214,10 +214,12 @@ cp0_regfile u_cp0_regfile(
     .c0_entrylo0(c0_entrylo0      ),
     .c0_entrylo1(c0_entrylo1      ),
     .c0_index   (c0_index         ),
-    .tlbp       (tlbp             ),
+
+    .tlbp       (es_tlbp          ),
     .tlbp_found (tlbp_found       ),
-    .index      (index            ),
-    .tlbr       (tlbr             ),
+    .tlbp_index (tlbp_index       ),
+
+    .tlbr       (ws_tlbr          ),
     .r_vpn2     (r_vpn2           ),
     .r_asid     (r_asid           ),
     .r_g        (r_g              ),

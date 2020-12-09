@@ -25,7 +25,7 @@ module cp0_regfile(
 
     input             tlbp       ,
     input             tlbp_found ,
-    input      [ 3:0] index      ,
+    input      [ 3:0] tlbp_index ,
     // tlbr
     input             tlbr       ,
     input      [18:0] r_vpn2     ,
@@ -231,61 +231,75 @@ assign c0_entryhi = {c0_entryhi_vpn2,   // 31:13
                     };
 
 // CP0_ENTRYLO0
-wire [ 5:0] c0_entrylo0_31_26  ;
-reg  [19:0] c0_entrylo0_pfn2   ;
-reg  [ 5:0] c0_entrylo0_C_D_V_G;
+wire [ 5:0] c0_entrylo0_31_26;
+reg  [19:0] c0_entrylo0_pfn0 ;
+reg  [ 2:0] c0_entrylo0_C    ;
+reg         c0_entrylo0_D    ;
+reg         c0_entrylo0_V    ;
+reg         c0_entrylo0_G    ;
 // 31:26
 assign c0_entrylo0_31_26 = 0;
 // 25:6
 always @(posedge clk) begin
     if (reset)
-        c0_entrylo0_pfn2 <= 20'h0;
+        c0_entrylo0_pfn0 <= 20'h0;
     else if (mtc0_we && c0_addr == `CR_ENTRYLO0)
-        c0_entrylo0_pfn2 <= c0_wdata[25:6];
+        c0_entrylo0_pfn0 <= c0_wdata[25:6];
     else if (tlbr)
-        c0_entrylo0_pfn2 <= r_pfn0;
+        c0_entrylo0_pfn0 <= r_pfn0;
 end
 // 5:0
+// c0_entrylo0_C, c0_entrylo0_D, c0_entrylo0_V, c0_entrylo0_G
 always @(posedge clk) begin
     if (reset)
-        c0_entrylo0_C_D_V_G <= 6'h0;
+        {c0_entrylo0_C, c0_entrylo0_D, c0_entrylo0_V, c0_entrylo0_G} <= 6'h0;
     else if (mtc0_we && c0_addr == `CR_ENTRYLO0)
-        c0_entrylo0_C_D_V_G <= c0_wdata[5:0];
+        {c0_entrylo0_C, c0_entrylo0_D, c0_entrylo0_V, c0_entrylo0_G} <= c0_wdata[5:0];
     else if (tlbr)
-        c0_entrylo0_C_D_V_G <= {r_c0, r_d0, r_v0, r_g};
+        {c0_entrylo0_C, c0_entrylo0_D, c0_entrylo0_V, c0_entrylo0_G} <= {r_c0, r_d0, r_v0, r_g};
 end
-assign c0_entrylo0 = {c0_entrylo0_31_26  ,  // 31:26
-                      c0_entrylo0_pfn2   ,  // 25:6
-                      c0_entrylo0_C_D_V_G   // 5:0
+assign c0_entrylo0 = {c0_entrylo0_31_26,  // 31:26
+                      c0_entrylo0_pfn0 ,  // 25:6
+                      c0_entrylo0_C    ,  // 5:3
+                      c0_entrylo0_D    ,  // 2
+                      c0_entrylo0_V    ,  // 1
+                      c0_entrylo0_G       // 0
                      };
 
 // CP0_ENTRYLO1
-wire [ 5:0] c0_entrylo1_31_26  ;
-reg  [19:0] c0_entrylo1_pfn2   ;
-reg  [ 5:0] c0_entrylo1_C_D_V_G;
+wire [ 5:0] c0_entrylo1_31_26;
+reg  [19:0] c0_entrylo1_pfn1 ;
+reg  [ 2:0] c0_entrylo1_C    ;
+reg         c0_entrylo1_D    ;
+reg         c0_entrylo1_V    ;
+reg         c0_entrylo1_G    ;
 // 31:26
 assign c0_entrylo1_31_26 = 0;
 // 25:6
 always @(posedge clk) begin
     if (reset)
-        c0_entrylo1_pfn2 <= 20'h0;
+        c0_entrylo1_pfn1 <= 20'h0;
     else if (mtc0_we && c0_addr == `CR_ENTRYLO1)
-        c0_entrylo1_pfn2 <= c0_wdata[25:6];
+        c0_entrylo1_pfn1 <= c0_wdata[25:6];
     else if (tlbr)
-        c0_entrylo1_pfn2 <= r_pfn0;
+        c0_entrylo1_pfn1 <= r_pfn1;
 end
 // 5:0
+// c0_entrylo1_C, c0_entrylo1_D, c0_entrylo1_V, c0_entrylo1_G
 always @(posedge clk) begin
     if (reset)
-        c0_entrylo1_C_D_V_G <= 6'h0;
+        {c0_entrylo1_C, c0_entrylo1_D, c0_entrylo1_V, c0_entrylo1_G} <= 6'h0;
     else if (mtc0_we && c0_addr == `CR_ENTRYLO1)
-        c0_entrylo1_C_D_V_G <= c0_wdata[5:0];
+        {c0_entrylo1_C, c0_entrylo1_D, c0_entrylo1_V, c0_entrylo1_G} <= c0_wdata[5:0];
     else if (tlbr)
-        c0_entrylo1_C_D_V_G <= {r_c0, r_d0, r_v0, r_g};
+        {c0_entrylo1_C, c0_entrylo1_D, c0_entrylo1_V, c0_entrylo1_G} <= {r_c1, r_d1, r_v1, r_g};
 end
-assign c0_entrylo1 = {c0_entrylo1_31_26  ,  // 31:26
-                      c0_entrylo1_pfn2   ,  // 25:6
-                      c0_entrylo1_C_D_V_G   // 5:0
+assign c0_entrylo1 = {c0_entrylo1_31_26,  // 31:26
+                      c0_entrylo1_pfn1 ,  // 25:6
+                      c0_entrylo1_C    ,  // 5:3
+                      c0_entrylo1_D    ,  // 2
+                      c0_entrylo1_V    ,  // 1
+                      c0_entrylo1_G       // 0
                      };
 
 // CP0_INDEX
@@ -312,7 +326,7 @@ always@(posedge clk) begin
     else if (mtc0_we && c0_addr == `CR_INDEX)
         c0_index_index <= c0_wdata[3:0];
     else if (tlbp && tlbp_found)
-        c0_index_index <= index;
+        c0_index_index <= tlbp_index;
 end
 assign c0_index = {c0_index_p    ,  // 31:31
                    c0_index_30_4 ,  // 30:4

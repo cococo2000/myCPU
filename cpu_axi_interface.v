@@ -181,40 +181,40 @@ assign arprot  = 3'b0;
 //////////////////////////
 ////         r        ////
 //////////////////////////
-`define R_STATE_NUM 2
-reg [`R_STATE_NUM - 1: 0] r_state;
-reg [`R_STATE_NUM - 1: 0] r_next_state;
-parameter R_IDLE  = `R_STATE_NUM'b01;
-parameter R_VALID = `R_STATE_NUM'b10;
+// `define R_STATE_NUM 2
+// reg [`R_STATE_NUM - 1: 0] r_state;
+// reg [`R_STATE_NUM - 1: 0] r_next_state;
+// parameter R_IDLE  = `R_STATE_NUM'b01;
+// parameter R_VALID = `R_STATE_NUM'b10;
 
-always @(posedge clk) begin
-    if(~resetn) begin
-        r_state <= R_IDLE;
-    end
-    else begin
-        r_state <= r_next_state;
-    end
-end
+// always @(posedge clk) begin
+//     if(~resetn) begin
+//         r_state <= R_IDLE;
+//     end
+//     else begin
+//         r_state <= r_next_state;
+//     end
+// end
 
-always @(*) begin
-    case(r_state)
-        R_IDLE: begin
-            if(arvalid && arready)
-                r_next_state = R_VALID;
-            else
-                r_next_state = R_IDLE;
-        end
-        R_VALID: begin
-            if(rvalid && rready)
-                r_next_state = R_IDLE;
-            else
-                r_next_state = R_VALID;
-        end
-        default: begin
-            r_next_state = R_IDLE;
-        end
-    endcase
-end
+// always @(*) begin
+//     case(r_state)
+//         R_IDLE: begin
+//             if(arvalid && arready)
+//                 r_next_state = R_VALID;
+//             else
+//                 r_next_state = R_IDLE;
+//         end
+//         R_VALID: begin
+//             if(rvalid && rready)
+//                 r_next_state = R_IDLE;
+//             else
+//                 r_next_state = R_VALID;
+//         end
+//         default: begin
+//             r_next_state = R_IDLE;
+//         end
+//     endcase
+// end
 
 always @(posedge clk) begin
     if (~resetn) begin

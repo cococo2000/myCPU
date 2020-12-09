@@ -81,6 +81,7 @@ reg        cancel;
 // tlbwi & tlbr refetch
 reg        refetch_r;
 reg [31:0] refetch_pc;
+reg        start_refetch_r;
 always @(posedge clk) begin
     if (reset) begin
         refetch_r  <= 1'b0;
@@ -95,12 +96,24 @@ always @(posedge clk) begin
     end
 end
 
+always @(posedge clk) begin
+    if (reset) begin
+        start_refetch_r <= 1'b0;
+    end
+    else if (start_refetch) begin
+        start_refetch_r <= 1'b1;
+    end
+    else if (to_fs_valid && fs_allowin) begin
+        start_refetch_r <= 1'b0;
+    end
+end
+
 // pre-IF stage
 always @(posedge clk) begin
     if (reset) begin
         bd_done <= 1'b1;
     end
-    else if (ws_ex || ws_eret) begin
+    else if (ws_ex || ws_eret || start_refetch) begin
         bd_done <= 1'b1;
     end
     else if (ds_br_or_jump_op_r && fs_valid) begin
@@ -114,7 +127,7 @@ always @(posedge clk) begin
     if (reset) begin
         ds_br_or_jump_op_r = 1'b0;
     end
-    else if (ws_ex || ws_eret) begin
+    else if (ws_ex || ws_eret || start_refetch) begin
         ds_br_or_jump_op_r = 1'b0;
     end
     else if (fs_to_ds_valid && ds_allowin) begin
@@ -128,7 +141,7 @@ always @(posedge clk) begin
     if (reset) begin
         br_taken_r <= 1'b0;
     end
-    else if (ws_ex || ws_eret) begin
+    else if (ws_ex || ws_eret || start_refetch) begin
         br_taken_r <= 1'b0;
     end
     else if (br_taken && !br_stall) begin
@@ -174,8 +187,8 @@ always @(posedge clk) begin
     if (reset) begin
         nextpc_r <= seq_pc;
     end
-    else if (refetch) begin
-        nextpc_r <= fs_pc;
+    else if (start_refetch) begin
+        nextpc_r <= refetch_pc;
     end
     else if (ws_ex) begin
         nextpc_r <= 32'hbfc00380;
@@ -205,7 +218,7 @@ end
 assign pf_ready_go  = pf_ready_go_r;
 assign to_fs_valid  = ~reset && pf_ready_go;
 assign seq_pc       = fs_pc + 3'h4;
-assign nextpc       = refetch_r    ? refetch_pc   :
+assign nextpc       = start_refetch_r ? refetch_pc   :
                       ws_ex_r      ? 32'hbfc00380 :
                       ws_eret_r    ? cp0_epc      :
                       br_taken_r   ? br_target_r  :
@@ -243,11 +256,11 @@ always @(posedge clk) begin
     else if (fs_to_ds_valid && ds_allowin) begin
         fs_ready_go_r <= 1'b0;
     end
-    else if (inst_sram_data_ok && !cancel && !ws_ex && !ws_eret) begin
+    else if (inst_sram_data_ok && !cancel && !ws_ex && !ws_eret && !start_refetch) begin
         fs_ready_go_r <= 1'b1;
     end
 end
-assign fs_ready_go    = fs_ready_go_r;
+assign fs_ready_go    = fs_ready_go_r && !refetch_r;
 assign fs_allowin     = !fs_valid || fs_ready_go && ds_allowin;
 assign fs_to_ds_valid =  fs_valid && fs_ready_go;
 
@@ -258,7 +271,7 @@ always@(posedge clk) begin
     else if (inst_sram_data_ok) begin
         cancel <= 1'b0;
     end
-    else if (ws_ex || ws_eret) begin
+    else if (ws_ex || ws_eret || start_refetch) begin
         if (to_fs_valid || fs_allowin == 1'b0 && fs_ready_go == 1'b0) begin
             cancel <= 1'b1;
         end
@@ -269,7 +282,7 @@ always @(posedge clk) begin
     if (reset) begin
         fs_valid <= 1'b0;
     end
-    else if (ws_ex || ws_eret) begin
+    else if (ws_ex || ws_eret || start_refetch) begin
         fs_valid <= 1'b0;
     end
     else if (fs_allowin) begin
@@ -297,7 +310,7 @@ always@(posedge clk)begin
     if(reset)begin
         inst_sram_rdata_r_valid <= 1'b0;
     end
-    else if(ws_eret || ws_ex) begin
+    else if(ws_eret || ws_ex || start_refetch) begin
         inst_sram_rdata_r_valid <= 1'b0;
     end
     else if(fs_valid && inst_sram_data_ok)begin

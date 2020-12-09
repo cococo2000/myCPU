@@ -30,7 +30,21 @@ module exe_stage(
 
     input  es_data_valid,
     output es_ex,
-    input  flush
+    input  flush,
+
+    // TLB
+    output [ 5:0] tlbp_bus,
+    input  [18:0] entryhi_vpn2,
+    // search port 1
+    output [18:0] s1_vpn2,
+    output        s1_odd_page,
+    // output [ 7:0] s1_asid,
+    input         s1_found,
+    input  [ 3:0] s1_index,
+    input  [19:0] s1_pfn,
+    input  [ 2:0] s1_c,
+    input         s1_d,
+    input         s1_v
 );
 
 reg         es_valid      ;
@@ -71,8 +85,15 @@ wire        es_ld_addr_error;
 wire        es_st_addr_error;
 wire [31: 0]ds_badvaddr     ;
 wire [31: 0]es_badvaddr     ;
+// tlb
+wire        es_tlbp;
+wire        es_tlbwi;
+wire        es_tlbr;
 assign {
-        ds_badvaddr     , //206:175
+        es_tlbp         , // 209
+        es_tlbwi        , // 208
+        es_tlbr         , // 207
+        ds_badvaddr     , // 206:175
         c0_bus          , // 174:164
         es_bd           , // 163:163
         ds_ex           , // 162:162
@@ -103,7 +124,7 @@ wire [31:0] es_alu_src2    ;
 wire [31:0] es_alu_result  ;
 wire [31:0] es_res         ;
 wire        es_res_from_mem;
-
+wire [31:0] es_mem_addr    ;
 // mul & div parts
 wire        es_mult ;
 wire        es_multu;
@@ -151,6 +172,8 @@ assign es_res = es_mfhi ? hi :
 assign es_overflow = es_alu_overflow && es_overflow_inst;
 assign es_res_from_mem = es_load_op;
 assign es_to_ms_bus = {
+                       es_tlbwi       ,  // 130
+                       es_tlbr        ,  // 129
                        es_store_op    ,  // 128:128
                        es_badvaddr    ,  // 127:96
                        c0_bus         ,  // 95:85
@@ -317,7 +340,8 @@ assign data_sram_wstrb = {4{es_data_valid}} & (
                         inst_swl? {mem_pos == 2'd3, mem_pos[1]     , mem_pos!=2'd0  , 1'b1           } :
                         inst_swr? {1'b1           , mem_pos != 2'd3, !mem_pos[1]    , mem_pos == 2'd0} :
                                    4'b0);
-assign data_sram_addr = {es_alu_result[31: 2], {2{~inst_lwl & ~inst_swl}} & es_alu_result[1:0]};
+assign es_mem_addr = {es_alu_result[31: 2], {2{~inst_lwl & ~inst_swl}} & es_alu_result[1:0]};
+assign data_sram_addr = es_mem_addr;
 assign data_sram_wdata = st_data;
 
 // es forward bus
@@ -422,4 +446,11 @@ assign es_excode = ({5{es_ex}} &
                              ({5{es_st_addr_error}} & `EX_ADES)) ));
 assign es_badvaddr = {32{es_valid && (ds_ex || es_ld_addr_error || es_st_addr_error)}}
                    & (ds_ex ? ds_badvaddr : es_alu_result);
+
+// TLB
+assign s1_vpn2 = es_tlbp ? entryhi_vpn2: es_mem_addr[31:13];
+assign s1_odd_page = es_mem_addr[12];
+
+assign tlbp_bus = {es_tlbp, s1_found, s1_index};    // TODO: hazard check
+
 endmodule

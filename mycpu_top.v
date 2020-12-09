@@ -144,6 +144,57 @@ wire [31:0] data_sram_rdata  ;
 wire        data_sram_addr_ok;
 wire        data_sram_data_ok;
 
+// TLB module
+wire [18:0] s0_vpn2    ;
+wire        s0_odd_page;
+wire [ 7:0] s0_asid    ;
+wire        s0_found   ;
+wire [ 3:0] s0_index   ;
+wire [19:0] s0_pfn     ;
+wire [ 2:0] s0_c       ;
+wire        s0_d       ;
+wire        s0_v       ;
+
+wire [18:0] s1_vpn2    ;
+wire        s1_odd_page;
+wire [ 7:0] s1_asid    ;
+wire        s1_found   ;
+wire [ 3:0] s1_index   ;
+wire [19:0] s1_pfn     ;
+wire [ 2:0] s1_c       ;
+wire        s1_d       ;
+wire        s1_v       ;
+
+wire        we         ;  // w(rite) e(nable)
+wire [ 3:0] w_index    ;
+wire [18:0] w_vpn2     ;
+wire [ 7:0] w_asid     ;
+wire        w_g        ;
+wire [19:0] w_pfn0     ;
+wire [ 2:0] w_c0       ;
+wire        w_d0       ;
+wire        w_v0       ;
+wire [19:0] w_pfn1     ;
+wire [ 2:0] w_c1       ;
+wire        w_d1       ;
+wire        w_v1       ;
+
+wire [ 3:0] r_index    ;
+wire [18:0] r_vpn2     ;
+wire [ 7:0] r_asid     ;
+wire        r_g        ;
+wire [19:0] r_pfn0     ;
+wire [ 2:0] r_c0       ;
+wire        r_d0       ;
+wire        r_v0       ;
+wire [19:0] r_pfn1     ;
+wire [ 2:0] r_c1       ;
+wire        r_d1       ;
+wire        r_v1       ;
+
+wire [18:0] entryhi_vpn2;
+wire [ 5:0] tlbp_bus    ;
+
 // IF stage
 if_stage if_stage(
     .clk              (aclk             ),
@@ -229,7 +280,20 @@ exe_stage exe_stage(
     .es_fwd_bus       (es_fwd_bus       ),
     .es_data_valid    (es_data_valid    ),
     .es_ex            (es_ex            ),
-    .flush            (flush            )
+    .flush            (flush            ),
+    // TLB
+    .tlbp_bus        (tlbp_bus        ),
+    .entryhi_vpn2    (entryhi_vpn2    ),
+
+    .s1_vpn2         (s1_vpn2         ),
+    .s1_odd_page     (s1_odd_page     ),
+    // .s1_asid         (s1_asid         ),
+    .s1_found        (s1_found        ),
+    .s1_index        (s1_index        ),
+    .s1_pfn          (s1_pfn          ),
+    .s1_c            (s1_c            ),
+    .s1_d            (s1_d            ),
+    .s1_v            (s1_v            )
 );
 // MEM stage
 mem_stage mem_stage(
@@ -274,7 +338,41 @@ wb_stage wb_stage(
     .cp0_epc          (cp0_epc          ),
     .ws_eret          (ws_eret          ),
     .ws_ex            (ws_ex            ),
-    .has_int          (has_int          )
+    .has_int          (has_int          ),
+
+    // TLB
+    .entryhi_vpn2(entryhi_vpn2),
+    .tlbp_bus    (tlbp_bus),
+
+    .s0_asid     (s0_asid),
+    .s1_asid     (s1_asid),
+
+    .we          (we     ),
+    .w_index     (w_index),
+    .w_vpn2      (w_vpn2 ),
+    .w_asid      (w_asid ),
+    .w_g         (w_g    ),
+    .w_pfn0      (w_pfn0 ),
+    .w_c0        (w_c0   ),
+    .w_d0        (w_d0   ),
+    .w_v0        (w_v0   ),
+    .w_pfn1      (w_pfn1 ),
+    .w_c1        (w_c1   ),
+    .w_d1        (w_d1   ),
+    .w_v1        (w_v1   ),
+
+    .r_index     (r_index),
+    .r_vpn2      (r_vpn2 ),
+    .r_asid      (r_asid ),
+    .r_g         (r_g    ),
+    .r_pfn0      (r_pfn0 ),
+    .r_c0        (r_c0   ),
+    .r_d0        (r_d0   ),
+    .r_v0        (r_v0   ),
+    .r_pfn1      (r_pfn1 ),
+    .r_c1        (r_c1   ),
+    .r_d1        (r_d1   ),
+    .r_v1        (r_v1   )
 );
 
 cpu_axi_interface cpu_axi_interface(
@@ -348,7 +446,7 @@ cpu_axi_interface cpu_axi_interface(
 );
 
 tlb u_tlb(
-    .clk        (clk        ),
+    .clk        (aclk       ),
 
     // search port 0
     .s0_vpn2    (s0_vpn2    ),

@@ -3,9 +3,9 @@
     // width of bus
     `define BR_BUS_WD       35
     `define FS_TO_DS_BUS_WD 71
-    `define DS_TO_ES_BUS_WD 207
-    `define ES_TO_MS_BUS_WD 129
-    `define MS_TO_WS_BUS_WD 123
+    `define DS_TO_ES_BUS_WD 210
+    `define ES_TO_MS_BUS_WD 131
+    `define MS_TO_WS_BUS_WD 125
     `define WS_TO_RF_BUS_WD 41
     `define ES_FWD_BUS_WD   40
     `define MS_FWD_BUS_WD   44

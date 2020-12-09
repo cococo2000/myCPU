@@ -15,13 +15,18 @@ module wb_stage(
     output [ 3:0] debug_wb_rf_wen  ,
     output [ 4:0] debug_wb_rf_wnum ,
     output [31:0] debug_wb_rf_wdata,
+
     output [31:0] cp0_epc,
     output        ws_eret,
     output        ws_ex  ,
     output        has_int,
 
     // TLB
+    output [18:0] entryhi_vpn2,
     input  [ 5:0] tlbp_bus,
+    // search port asid
+    output [ 7:0] s0_asid,
+    output [ 7:0] s1_asid,
     // write port
     output        we     ,
     output [ 3:0] w_index,
@@ -75,7 +80,9 @@ wire [31:0] wb_badvaddr;
 wire        ws_tlbwi;
 wire        ws_tlbr;
 assign {
-        ms_badvaddr    , // 122:91
+        ws_tlbwi       ,  // 124
+        ws_tlbr        ,  // 123
+        ms_badvaddr    ,  // 122:91
         c0_bus         ,  // 90:80
         ws_bd          ,  // 79:79
         ms_ex          ,  // 78:78
@@ -136,55 +143,31 @@ assign debug_wb_rf_wen   = rf_we;
 assign debug_wb_rf_wnum  = ws_dest;
 assign debug_wb_rf_wdata = rf_wdata;
 
-// TLB module
-// wire                       we     ;     // w(rite) e(nable)
-// wire  [               3:0] w_index;
-// wire  [              18:0] w_vpn2 ;
-// wire  [               7:0] w_asid ;
-// wire                       w_g    ;
-// wire  [              19:0] w_pfn0 ;
-// wire  [               2:0] w_c0   ;
-// wire                       w_d0   ;
-// wire                       w_v0   ;
-// wire  [              19:0] w_pfn1 ;
-// wire  [               2:0] w_c1   ;
-// wire                       w_d1   ;
-// wire                       w_v1   ;
-
-// wire [                3:0] r_index;
-// wire [               18:0] r_vpn2 ;
-// wire [                7:0] r_asid ;
-// wire                       r_g    ;
-// wire [               19:0] r_pfn0 ;
-// wire [                2:0] r_c0   ;
-// wire                       r_d0   ;
-// wire                       r_v0   ;
-// wire [               19:0] r_pfn1 ;
-// wire [                2:0] r_c1   ;
-// wire                       r_d1   ;
-// wire                       r_v1   ;
-
 wire [31:0] c0_entryhi ;
 wire [31:0] c0_entrylo0;
 wire [31:0] c0_entrylo1;
 wire [31:0] c0_index   ;
 
-wire es_tlbp;
-wire tlbp_found;
-wire tlbp_index;
+wire        es_tlbp   ;
+wire        tlbp_found;
+wire [ 3:0] tlbp_index;
+assign entryhi_vpn2 = c0_entryhi[31:13];
 assign {es_tlbp   ,
         tlbp_found,
         tlbp_index
         } = tlbp_bus;
 
-assign we      = ws_tlbwi;
-assign w_index = c0_index[3:0];
-assign w_vpn2  = c0_entryhi[31:13];
-assign w_asid  = c0_entryhi[7:0];
-assign w_g     = c0_entrylo0[0] && c0_entrylo1[0];
-assign w_pfn0  = c0_entrylo0[25:6];
+assign s0_asid = c0_entryhi[7:0];
+assign s1_asid = c0_entryhi[7:0];
+
+assign we                 = ws_tlbwi;
+assign w_index            = c0_index[3:0];
+assign w_vpn2             = c0_entryhi[31:13];
+assign w_asid             = c0_entryhi[7:0];
+assign w_g                = c0_entrylo0[0] && c0_entrylo1[0];
+assign w_pfn0             = c0_entrylo0[25:6];
 assign {w_c0, w_d0, w_v0} = c0_entrylo0[5:1];
-assign w_pfn1  = c0_entrylo1[25:6];
+assign w_pfn1             = c0_entrylo1[25:6];
 assign {w_c1, w_d1, w_v1} = c0_entrylo1[5:1];
 
 assign r_index = c0_index[3:0];

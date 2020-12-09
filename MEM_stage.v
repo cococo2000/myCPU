@@ -46,7 +46,12 @@ wire        es_ex;
 wire [ 4:0] es_excode;
 wire [31:0] ms_badvaddr;
 wire [31:0] es_badvaddr;
+// TLB
+wire        ms_tlbwi;
+wire        ms_tlbr;
 assign {
+        ms_tlbwi       ,  // 130
+        ms_tlbr        ,  // 129
         ms_store_op    ,  // 128:128
         es_badvaddr    ,  // 127:96
         c0_bus         ,  // 95:85
@@ -71,6 +76,8 @@ assign ms_eret = ms_valid && c0_bus[10];
 assign ms_mfc0 = ms_valid && c0_bus[ 8];
 assign ms_flush = ms_valid && (ms_eret || ms_ex);
 assign ms_to_ws_bus = {
+                       ms_tlbwi       ,  // 124
+                       ms_tlbr        ,  // 123
                        ms_badvaddr    ,  // 122:91
                        c0_bus         ,  // 90:80
                        ms_bd          ,  // 79:79

@@ -96,7 +96,7 @@ assign ms_to_ws_bus = {
                        ms_pc             // 31:0
                       };
 
-assign ms_ready_go    = !(ms_store_op || ms_res_from_mem) || data_sram_rdata_r_valid || data_sram_data_ok && !cancel || ms_ex;
+assign ms_ready_go    = !(ms_store_op || ms_res_from_mem) || ((data_sram_rdata_r_valid || data_sram_data_ok) && !cancel) || ms_ex;
 assign ms_allowin     = !ms_valid || ms_ready_go && ws_allowin;
 assign ms_to_ws_valid = ms_valid && ms_ready_go && !flush;
 always @(posedge clk) begin

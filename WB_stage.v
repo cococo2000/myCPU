@@ -104,7 +104,7 @@ assign {ws_eret,   // 10:10
 wire [31:0] cp0_rdata;
 wire        eret_flush;
 assign eret_flush = ws_valid && ws_eret;
-assign ws_mt_entryhi = ws_mtc0 && (c0_raddr[7:3] == `CR_ENTRYHI);
+assign ws_mt_entryhi = ws_mtc0 && (c0_raddr[7:3] == `CR_ENTRYHI) && ws_valid;
 assign start_refetch =  (ws_tlbwi || ws_tlbr) && ws_valid;
 
 wire [4 :0] rf_waddr;
@@ -165,7 +165,7 @@ assign {es_tlbp   ,
 assign s0_asid = c0_entryhi[7:0];
 assign s1_asid = c0_entryhi[7:0];
 
-assign we                 = ws_tlbwi;
+assign we                 = ws_tlbwi && ws_valid;
 assign w_index            = c0_index[3:0];
 assign w_vpn2             = c0_entryhi[31:13];
 assign w_asid             = c0_entryhi[7:0];

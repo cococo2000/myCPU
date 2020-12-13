@@ -455,6 +455,6 @@ assign es_badvaddr = {32{es_valid && (ds_ex || es_ld_addr_error || es_st_addr_er
 assign s1_vpn2 = es_tlbp ? entryhi_vpn2: es_mem_addr[31:13];
 assign s1_odd_page = es_mem_addr[12];
 
-assign tlbp_bus = {es_tlbp, s1_found, s1_index};    // TODO: hazard check
+assign tlbp_bus = {es_tlbp, s1_found, s1_index};
 
 endmodule

@@ -80,7 +80,7 @@ assign {ms_eret,   // 10:10
         ms_mfc0,   // 8:8
         c0_raddr   // 7:0
        } = c0_bus && {11{ms_valid}};
-assign ms_mt_entryhi = ms_mtc0 && (c0_raddr[7:3] == `CR_ENTRYHI);
+assign ms_mt_entryhi = ms_mtc0 && (c0_raddr[7:3] == `CR_ENTRYHI) && ms_valid;
 assign ms_flush = ms_valid && (ms_eret || ms_ex);
 assign ms_to_ws_bus = {
                        ms_tlbwi       ,  // 124:124

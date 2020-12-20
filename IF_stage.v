@@ -250,7 +250,7 @@ always @(posedge clk) begin
         pf_ready_go_r <= 1'b0;
     end
 end
-assign pf_ready_go  = pf_ready_go_r || tlb_refill || tlb_invalid;
+assign pf_ready_go  = pf_ready_go_r;
 assign to_fs_valid  = ~reset && pf_ready_go;
 assign seq_pc       = fs_pc + 3'h4;
 assign nextpc       = start_refetch_r ? refetch_pc   :
@@ -286,7 +286,7 @@ assign physical_pc = (pc_mapped && s0_found) ? {s0_pfn, nextpc_r[11:0]}
 assign tlb_refill  = pc_mapped && !s0_found;
 assign tlb_invalid = pc_mapped && s0_found && !s0_v;
 
-assign inst_sram_req = inst_sram_req_r && ~br_stall && !tlb_invalid && !tlb_refill;
+assign inst_sram_req = inst_sram_req_r && ~br_stall;
 assign inst_sram_wr = 1'b0;
 assign inst_sram_size = 2'h2;
 assign inst_sram_wstrb = 4'b0;
@@ -305,7 +305,7 @@ always @(posedge clk) begin
         fs_ready_go_r <= 1'b1;
     end
 end
-assign fs_ready_go    = fs_ready_go_r && !refetch_r || fs_tlb_ex;
+assign fs_ready_go    = fs_ready_go_r && !refetch_r;
 assign fs_allowin     = !fs_valid || fs_ready_go && ds_allowin;
 assign fs_to_ds_valid =  fs_valid && fs_ready_go;
 
@@ -365,7 +365,7 @@ always@(posedge clk)begin
         inst_sram_rdata_r_valid <= 1'b0;
     end
 end
-assign fs_inst = inst_sram_rdata_r_valid ? inst_sram_rdata_r : inst_sram_rdata;
+assign fs_inst = (inst_sram_rdata_r_valid ? inst_sram_rdata_r : inst_sram_rdata) & {32{!fs_tlb_ex}};
 
 // exception judge
 always @(posedge clk) begin

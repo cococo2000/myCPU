@@ -245,7 +245,7 @@ always @(posedge clk) begin
         pf_ready_go_r <= 1'b0;
     end
 end
-assign pf_ready_go  = pf_ready_go_r;
+assign pf_ready_go  = pf_ready_go_r || tlb_refill || tlb_invalid;
 assign to_fs_valid  = ~reset && pf_ready_go;
 assign seq_pc       = fs_pc + 3'h4;
 assign nextpc       = start_refetch_r ? refetch_pc   :
@@ -304,7 +304,7 @@ always @(posedge clk) begin
         fs_ready_go_r <= 1'b1;
     end
 end
-assign fs_ready_go    = fs_ready_go_r && !refetch_r;
+assign fs_ready_go    = fs_ready_go_r && !refetch_r || fs_tlb_ex;
 assign fs_allowin     = !fs_valid || fs_ready_go && ds_allowin;
 assign fs_to_ds_valid =  fs_valid && fs_ready_go;
 
@@ -372,7 +372,10 @@ always @(posedge clk) begin
     if (reset) begin
         fs_tlb_ex <= 1'b0;
     end
-    else if ((tlb_refill || tlb_invalid) && fs_allowin) begin
+    else if (ws_ex || ws_eret || start_refetch) begin
+        fs_tlb_ex <= 1'b0;
+    end
+    else if (tlb_refill || tlb_invalid) begin
         fs_tlb_ex <= 1'b1;
     end
     else if (fs_to_ds_valid && ds_allowin) begin
@@ -383,7 +386,10 @@ always @(posedge clk) begin
     if (reset) begin
         fs_tlb_refill <= 1'b0;
     end
-    else if (tlb_refill && fs_allowin) begin
+    else if (ws_ex || ws_eret || start_refetch) begin
+        fs_tlb_refill <= 1'b0;
+    end
+    else if (tlb_refill) begin
         fs_tlb_refill <= 1'b1;
     end
     else if (fs_to_ds_valid && ds_allowin) begin
@@ -395,7 +401,7 @@ assign addr_error  = (fs_pc[1:0] != 2'b0);
 assign fs_ex       = fs_valid && (addr_error || fs_tlb_ex);
 assign fs_bd       = ds_br_or_jump_op_r;
 assign fs_excode   = {5{fs_ex}} & (addr_error ? `EX_ADEL :
-                                   fs_tlb_ex  ? `EX_ADEL :
+                                   fs_tlb_ex  ? `EX_TLBL :
                                    5'b0);
 
 endmodule

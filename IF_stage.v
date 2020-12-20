@@ -98,6 +98,11 @@ reg        cancel;
 reg        refetch_r;
 reg [31:0] refetch_pc;
 reg        start_refetch_r;
+wire       pc_mapped;
+wire       [31:0] physical_pc;
+wire       tlb_refill;
+wire       tlb_invalid;
+reg        fs_tlb_ex;
 always @(posedge clk) begin
     if (reset) begin
         refetch_r  <= 1'b0;
@@ -272,10 +277,6 @@ always @(posedge clk) begin
     end
 end
 
-wire pc_mapped;
-wire [31:0] physical_pc;
-wire tlb_refill;
-wire tlb_invalid;
 assign pc_mapped = !(nextpc_r[31:30] == 2'b10);
 assign s0_vpn2     = nextpc_r[31:13];
 assign s0_odd_page = nextpc_r[12];
@@ -367,7 +368,6 @@ end
 assign fs_inst = inst_sram_rdata_r_valid ? inst_sram_rdata_r : inst_sram_rdata;
 
 // exception judge
-reg fs_tlb_ex;
 always @(posedge clk) begin
     if (reset) begin
         fs_tlb_ex <= 1'b0;

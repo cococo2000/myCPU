@@ -2,10 +2,10 @@
     `define MYCPU_H
     // width of bus
     `define BR_BUS_WD       35
-    `define FS_TO_DS_BUS_WD 71
-    `define DS_TO_ES_BUS_WD 210
-    `define ES_TO_MS_BUS_WD 131
-    `define MS_TO_WS_BUS_WD 125
+    `define FS_TO_DS_BUS_WD 72
+    `define DS_TO_ES_BUS_WD 211
+    `define ES_TO_MS_BUS_WD 132
+    `define MS_TO_WS_BUS_WD 126
     `define WS_TO_RF_BUS_WD 41
     `define ES_FWD_BUS_WD   40
     `define MS_FWD_BUS_WD   44
@@ -31,4 +31,8 @@
     `define EX_BP           5'h09
     `define EX_RI           5'h0a
     `define EX_OV           5'h0c
+    // TLB ex
+    `define EX_MOD          5'h01
+    `define EX_TLBL         5'h02
+    `define EX_TLBS         5'h03
 `endif

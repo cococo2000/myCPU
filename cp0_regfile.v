@@ -170,7 +170,7 @@ end
 // CP0_BadVAddr
 reg [31: 0] c0_badvaddr;
 always @(posedge clk) begin
-    if (wb_ex && (wb_excode == `EX_ADEL || wb_excode == `EX_ADES))
+    if (wb_ex && (wb_excode == `EX_ADEL || wb_excode == `EX_ADES || wb_excode == `EX_MOD || wb_excode == `EX_TLBL || wb_excode == `EX_TLBS))
         c0_badvaddr <= wb_badvaddr;
 end
 
@@ -210,9 +210,8 @@ always @(posedge clk) begin
         c0_entryhi_vpn2 <= c0_wdata[31:13];
     else if (tlbr)
         c0_entryhi_vpn2 <= r_vpn2;
-    // else if((wb_excode == 5'h01 || wb_excode == 5'h02 || wb_excode==5'h03) && wb_ex)
-    //     // c0_entryhi_vpn2<= wb_badvaddr[31:12];
-    //     c0_entryhi_vpn2 <= wb_badvaddr[31:13];
+    else if((wb_excode == `EX_MOD || wb_excode == `EX_TLBL || wb_excode == `EX_TLBS) && wb_ex)
+        c0_entryhi_vpn2 <= wb_badvaddr[31:13];
 end
 // 12:8
 assign c0_entryhi_12_8 = 5'b0;

@@ -37,7 +37,7 @@ module exe_stage(
 
     // TLB
     output [ 5:0] tlbp_bus,
-    input  [18:0] entryhi_vpn2,
+    input  [19:0] entryhi_vpn,
     // search port 1
     output [18:0] s1_vpn2    ,
     output        s1_odd_page,
@@ -89,10 +89,13 @@ wire        es_st_addr_error;
 wire [31: 0]ds_badvaddr     ;
 wire [31: 0]es_badvaddr     ;
 // tlb
+wire        s0_tlb_refill;
+wire        es_tlb_refill;
 wire        es_tlbp;
 wire        es_tlbwi;
 wire        es_tlbr;
 assign {
+        s0_tlb_refill   , // 210:210
         es_tlbp         , // 209:209
         es_tlbwi        , // 208:208
         es_tlbr         , // 207:207
@@ -175,6 +178,7 @@ assign es_res = es_mfhi ? hi :
 assign es_overflow = es_alu_overflow && es_overflow_inst;
 assign es_res_from_mem = es_load_op;
 assign es_to_ms_bus = {
+                       es_tlb_refill  ,  // 131:131
                        es_tlbwi       ,  // 130:130
                        es_tlbr        ,  // 129:129
                        es_store_op    ,  // 128:128
@@ -332,7 +336,27 @@ always @(posedge clk) begin
     end
 end
 
-assign data_sram_req = data_sram_req_r && es_valid;
+// TLB
+wire addr_mapped;
+wire [31:0] physical_addr;
+wire tlb_ex;
+wire tlb_refill;
+wire tlb_invalid;
+wire tlb_modified;
+assign addr_mapped = !(es_mem_addr[31:30] == 2'b10);
+assign s1_vpn2 = es_tlbp ? entryhi_vpn[19:1] : es_mem_addr[31:13];
+assign s1_odd_page = es_tlbp ? entryhi_vpn[0] : es_mem_addr[12];
+assign physical_addr = (addr_mapped && s1_found) ? {s1_pfn, es_mem_addr[11:0]}
+                                                 : es_mem_addr;
+assign tlb_refill  = (es_load_op || es_store_op) && addr_mapped && !s1_found;
+assign tlb_invalid = (es_load_op || es_store_op) && addr_mapped && s1_found && !s1_v;
+assign tlb_modified = es_store_op && addr_mapped && s1_found && s1_v && !s1_d;
+assign tlb_ex = tlb_refill || tlb_invalid || tlb_modified;
+assign es_tlb_refill = ds_ex ? s0_tlb_refill : (es_valid && tlb_refill);
+
+assign tlbp_bus = {es_tlbp, s1_found, s1_index};
+
+assign data_sram_req = data_sram_req_r && es_valid && !tlb_ex;
 assign data_sram_wr = (|data_sram_wstrb);
 assign data_sram_size = data_size_is_two ? 2'd2 :
                         data_size_is_one ? 2'd1 :
@@ -345,7 +369,7 @@ assign data_sram_wstrb = {4{es_data_valid}} & (
                         inst_swr? {1'b1           , mem_pos != 2'd3, !mem_pos[1]    , mem_pos == 2'd0} :
                                    4'b0);
 assign es_mem_addr = {es_alu_result[31: 2], {2{~inst_lwl & ~inst_swl}} & es_alu_result[1:0]};
-assign data_sram_addr = es_mem_addr;
+assign data_sram_addr = physical_addr;// es_mem_addr;
 assign data_sram_wdata = st_data;
 
 // es forward bus
@@ -442,19 +466,19 @@ begin
 end
 
 // exception
-assign es_ex     = es_valid && (ds_ex || es_overflow || es_ld_addr_error || es_st_addr_error);
+assign es_ex     = es_valid && (ds_ex || es_overflow || es_ld_addr_error || es_st_addr_error || tlb_ex);
 assign es_excode = ({5{es_ex}} & 
                    (ds_ex ? ds_excode
                           : (({5{es_overflow}}      & `EX_OV  ) |
                              ({5{es_ld_addr_error}} & `EX_ADEL) |
-                             ({5{es_st_addr_error}} & `EX_ADES)) ));
-assign es_badvaddr = {32{es_valid && (ds_ex || es_ld_addr_error || es_st_addr_error)}}
+                             ({5{es_st_addr_error}} & `EX_ADES) |
+                             ({5{tlb_modified}}     & `EX_MOD ) |
+                             ({5{tlb_refill && es_load_op }} & `EX_TLBL) |
+                             ({5{tlb_refill && es_store_op}} & `EX_TLBS) |
+                             ({5{tlb_invalid && es_load_op }} & `EX_TLBL) |
+                             ({5{tlb_invalid && es_store_op}} & `EX_TLBS)
+                            ) ));
+assign es_badvaddr = {32{es_valid && (ds_ex || es_ld_addr_error || es_st_addr_error || tlb_ex)}}
                    & (ds_ex ? ds_badvaddr : es_alu_result);
-
-// TLB
-assign s1_vpn2 = es_tlbp ? entryhi_vpn2: es_mem_addr[31:13];
-assign s1_odd_page = es_mem_addr[12];
-
-assign tlbp_bus = {es_tlbp, s1_found, s1_index};
 
 endmodule

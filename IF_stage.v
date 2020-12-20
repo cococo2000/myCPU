@@ -30,10 +30,22 @@ module if_stage(
     input  [31:0] cp0_epc,
     input         ws_eret,
     input         ws_ex  ,
+    input         ws_tlb_refill,
 
     // refetch
     input         refetch,
-    input         start_refetch
+    input         start_refetch,
+
+    // search port 1
+    output [18:0] s0_vpn2    ,
+    output        s0_odd_page,
+    // output [ 7:0] s0_asid,
+    input         s0_found   ,
+    input  [ 3:0] s0_index   ,
+    input  [19:0] s0_pfn     ,
+    input  [ 2:0] s0_c       ,
+    input         s0_d       ,
+    input         s0_v
 );
 
 reg         fs_valid;
@@ -62,20 +74,24 @@ wire [31:0] br_target;
 reg  [31:0] br_target_r;
 assign {ds_br_or_jump_op, br_stall, br_taken, br_target} = br_bus;
 
+reg         fs_tlb_refill;
 wire        fs_ex;
 wire        fs_bd;
 wire [ 4:0] fs_excode;
 wire [31:0] fs_inst;
 reg  [31:0] fs_pc;
-assign fs_to_ds_bus = {fs_bd,       // 70:70
-                       fs_ex,       // 69:69
-                       fs_excode,   // 68:64
-                       fs_inst,     // 63:32
-                       fs_pc        // 31:0
+assign fs_to_ds_bus = {
+                       fs_tlb_refill,   // 71:71
+                       fs_bd,           // 70:70
+                       fs_ex,           // 69:69
+                       fs_excode,       // 68:64
+                       fs_inst,         // 63:32
+                       fs_pc            // 31:0
                       };
 
 reg        ws_ex_r;
 reg        ws_eret_r;
+reg        ws_tlb_refill_r;
 reg        cancel;
 
 // tlbwi & tlbr refetch
@@ -182,6 +198,17 @@ always @(posedge clk) begin
         ws_eret_r <= 1'b0;
     end
 end
+always @(posedge clk) begin
+    if (reset) begin
+        ws_tlb_refill_r <= 1'b0;
+    end
+    else if (ws_tlb_refill) begin
+        ws_tlb_refill_r <= 1'b1;
+    end
+    else if (to_fs_valid && fs_allowin) begin
+        ws_tlb_refill_r <= 1'b0;
+    end
+end
 
 always @(posedge clk) begin
     if (reset) begin
@@ -190,7 +217,10 @@ always @(posedge clk) begin
     else if (start_refetch) begin
         nextpc_r <= refetch_pc;
     end
-    else if (ws_ex) begin
+    else if (ws_tlb_refill) begin
+        nextpc_r <= 32'hbfc00200;
+    end
+    else if (ws_ex && !ws_tlb_refill) begin
         nextpc_r <= 32'hbfc00380;
     end
     else if (ws_eret) begin
@@ -219,7 +249,8 @@ assign pf_ready_go  = pf_ready_go_r;
 assign to_fs_valid  = ~reset && pf_ready_go;
 assign seq_pc       = fs_pc + 3'h4;
 assign nextpc       = start_refetch_r ? refetch_pc   :
-                      ws_ex_r         ? 32'hbfc00380 :
+                      ws_tlb_refill_r ? 32'hbfc00200 :
+                      (ws_ex_r && !ws_tlb_refill_r) ? 32'hbfc00380 :
                       ws_eret_r       ? cp0_epc      :
                       br_taken_r      ? br_target_r  :
                                         seq_pc;
@@ -241,11 +272,24 @@ always @(posedge clk) begin
     end
 end
 
-assign inst_sram_req = inst_sram_req_r && ~br_stall;
+wire pc_mapped;
+wire [31:0] physical_pc;
+wire tlb_refill;
+wire tlb_invalid;
+assign pc_mapped = !(nextpc_r[31:30] == 2'b10);
+assign s0_vpn2     = nextpc_r[31:13];
+assign s0_odd_page = nextpc_r[12];
+
+assign physical_pc = (pc_mapped && s0_found) ? {s0_pfn, nextpc_r[11:0]}
+                                             : nextpc_r;
+assign tlb_refill  = pc_mapped && !s0_found;
+assign tlb_invalid = pc_mapped && s0_found && !s0_v;
+
+assign inst_sram_req = inst_sram_req_r && ~br_stall && !tlb_invalid && !tlb_refill;
 assign inst_sram_wr = 1'b0;
 assign inst_sram_size = 2'h2;
 assign inst_sram_wstrb = 4'b0;
-assign inst_sram_addr = nextpc_r;
+assign inst_sram_addr = physical_pc;
 assign inst_sram_wdata = 32'b0;
 
 // IF stage
@@ -323,10 +367,35 @@ end
 assign fs_inst = inst_sram_rdata_r_valid ? inst_sram_rdata_r : inst_sram_rdata;
 
 // exception judge
+reg fs_tlb_ex;
+always @(posedge clk) begin
+    if (reset) begin
+        fs_tlb_ex <= 1'b0;
+    end
+    else if ((tlb_refill || tlb_invalid) && fs_allowin) begin
+        fs_tlb_ex <= 1'b1;
+    end
+    else if (fs_to_ds_valid && ds_allowin) begin
+        fs_tlb_ex <= 1'b0;
+    end
+end
+always @(posedge clk) begin
+    if (reset) begin
+        fs_tlb_refill <= 1'b0;
+    end
+    else if (tlb_refill && fs_allowin) begin
+        fs_tlb_refill <= 1'b1;
+    end
+    else if (fs_to_ds_valid && ds_allowin) begin
+        fs_tlb_refill <= 1'b0;
+    end
+end
 wire   addr_error;
 assign addr_error  = (fs_pc[1:0] != 2'b0);
-assign fs_ex       = fs_valid && addr_error;
+assign fs_ex       = fs_valid && (addr_error || fs_tlb_ex);
 assign fs_bd       = ds_br_or_jump_op_r;
-assign fs_excode   = {5{fs_ex}} & `EX_ADEL;
+assign fs_excode   = {5{fs_ex}} & (addr_error ? `EX_ADEL :
+                                   fs_tlb_ex  ? `EX_ADEL :
+                                   5'b0);
 
 endmodule

@@ -48,9 +48,11 @@ wire [ 4:0] es_excode;
 wire [31:0] ms_badvaddr;
 wire [31:0] es_badvaddr;
 // TLB
+wire        ms_tlb_refill;
 wire        ms_tlbwi;
 wire        ms_tlbr;
 assign {
+        ms_tlb_refill  ,  // 131:131
         ms_tlbwi       ,  // 130:130
         ms_tlbr        ,  // 129:129
         ms_store_op    ,  // 128:128
@@ -83,6 +85,7 @@ assign {ms_eret,   // 10:10
 assign ms_mt_entryhi = ms_mtc0 && (c0_raddr[7:3] == `CR_ENTRYHI) && ms_valid;
 assign ms_flush = ms_valid && (ms_eret || ms_ex);
 assign ms_to_ws_bus = {
+                       ms_tlb_refill  ,  // 125:125
                        ms_tlbwi       ,  // 124:124
                        ms_tlbr        ,  // 123:123
                        ms_badvaddr    ,  // 122:91

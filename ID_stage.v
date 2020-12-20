@@ -28,16 +28,19 @@ module id_stage(
 reg         ds_valid   ;
 wire        ds_ready_go;
 
-wire [31                 :0] fs_pc;
+// wire [31                 :0] fs_pc;
 reg  [`FS_TO_DS_BUS_WD -1:0] fs_to_ds_bus_r;
-assign fs_pc = fs_to_ds_bus[31:0];
+// assign fs_pc = fs_to_ds_bus[31:0];
 
+wire        ds_tlb_refill;
 wire        ds_bd;
 wire        fs_ex;
 wire [ 4:0] fs_excode;
 wire [31:0] ds_inst;
 wire [31:0] ds_pc  ;
-assign {ds_bd,       // 70:70
+assign {
+        ds_tlb_refill,// 71:71
+        ds_bd,       // 70:70
         fs_ex,       // 69:69
         fs_excode,   // 68:64
         ds_inst,     // 63:32
@@ -231,6 +234,7 @@ assign c0_bus = {inst_eret,   // 10:10
                  c0_raddr     // 7:0
                 };
 assign ds_to_es_bus = {
+                       ds_tlb_refill, // 210:210
                        inst_tlbp    , // 209:209
                        inst_tlbwi   , // 208:208
                        inst_tlbr    , // 207:207

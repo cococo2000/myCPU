@@ -21,9 +21,10 @@ module wb_stage(
     output        ws_eret,
     output        ws_ex  ,
     output        has_int,
+    output        ws_tlb_refill,
 
     // TLB
-    output [18:0] entryhi_vpn2,
+    output [19:0] entryhi_vpn,
     input  [ 5:0] tlbp_bus,
     // search port asid
     output [ 7:0] s0_asid,
@@ -80,9 +81,11 @@ wire        ms_ex;
 wire [ 4:0] ms_excode;
 wire [31:0] ms_badvaddr;
 wire [31:0] wb_badvaddr;
+wire        tlb_refill;
 wire        ws_tlbwi;
 wire        ws_tlbr;
 assign {
+        tlb_refill     ,  // 125:125
         ws_tlbwi       ,  // 124:124
         ws_tlbr        ,  // 123:123
         ms_badvaddr    ,  // 122:91
@@ -119,6 +122,7 @@ assign ws_to_rf_bus = {rf_we   ,  //40:37
 wire [ 4:0] ws_excode;
 assign ws_ex = ws_valid && ms_ex;
 assign ws_excode = {5{ws_ex}} & ms_excode;
+assign ws_tlb_refill = ws_valid && tlb_refill;
 
 assign ws_ready_go = 1'b1;
 assign ws_allowin  = !ws_valid || ws_ready_go;
@@ -156,7 +160,7 @@ wire [31:0] c0_index   ;
 wire        es_tlbp   ;
 wire        tlbp_found;
 wire [ 3:0] tlbp_index;
-assign entryhi_vpn2 = c0_entryhi[31:13];
+assign entryhi_vpn = c0_entryhi[31:12];
 assign {es_tlbp   ,
         tlbp_found,
         tlbp_index

@@ -124,6 +124,7 @@ wire        flush        ;
 wire        es_ex        ;
 wire        es_data_valid;
 wire        has_int      ;
+wire        ws_tlb_refill;
 assign flush = ws_ex || ws_eret;
 assign es_data_valid = !(flush || ms_flush || es_ex);
 
@@ -196,8 +197,8 @@ wire [ 2:0] r_c1       ;
 wire        r_d1       ;
 wire        r_v1       ;
 
-wire [18:0] entryhi_vpn2;
-wire [ 5:0] tlbp_bus    ;
+wire [19:0] entryhi_vpn;
+wire [ 5:0] tlbp_bus   ;
 
 wire refetch;       // ds -> fs
 wire start_refetch; // ws -> fs
@@ -233,9 +234,20 @@ if_stage if_stage(
     .cp0_epc          (cp0_epc          ),
     .ws_eret          (ws_eret          ),
     .ws_ex            (ws_ex            ),
+    .ws_tlb_refill    (ws_tlb_refill    ),
 
     .refetch          (refetch          ),
-    .start_refetch    (start_refetch    )
+    .start_refetch    (start_refetch    ),
+
+    .s0_vpn2          (s0_vpn2          ),
+    .s0_odd_page      (s0_odd_page      ),
+    // .s0_asid          (s0_asid          ),
+    .s0_found         (s0_found         ),
+    .s0_index         (s0_index         ),
+    .s0_pfn           (s0_pfn           ),
+    .s0_c             (s0_c             ),
+    .s0_d             (s0_d             ),
+    .s0_v             (s0_v             )
 );
 // ID stage
 id_stage id_stage(
@@ -299,7 +311,7 @@ exe_stage exe_stage(
     .flush            (flush            ),
     // TLB
     .tlbp_bus        (tlbp_bus        ),
-    .entryhi_vpn2    (entryhi_vpn2    ),
+    .entryhi_vpn     (entryhi_vpn     ),
 
     .s1_vpn2         (s1_vpn2         ),
     .s1_odd_page     (s1_odd_page     ),
@@ -357,9 +369,10 @@ wb_stage wb_stage(
     .ws_eret          (ws_eret          ),
     .ws_ex            (ws_ex            ),
     .has_int          (has_int          ),
+    .ws_tlb_refill    (ws_tlb_refill    ),
 
     // TLB
-    .entryhi_vpn2(entryhi_vpn2),
+    .entryhi_vpn (entryhi_vpn),
     .tlbp_bus    (tlbp_bus),
 
     .s0_asid     (s0_asid),

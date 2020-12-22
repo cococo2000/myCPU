@@ -347,7 +347,7 @@ assign addr_mapped = !(es_mem_addr[31:30] == 2'b10);
 assign s1_vpn2 = es_tlbp ? entryhi_vpn[19:1] : es_mem_addr[31:13];
 assign s1_odd_page = es_tlbp ? entryhi_vpn[0] : es_mem_addr[12];
 assign physical_addr = (addr_mapped && s1_found) ? {s1_pfn, es_mem_addr[11:0]}
-                                                 : es_mem_addr;
+                                                 : {3'b0, es_mem_addr[28:0]};
 assign tlb_refill  = (es_load_op || es_store_op) && addr_mapped && !s1_found;
 assign tlb_invalid = (es_load_op || es_store_op) && addr_mapped && s1_found && !s1_v;
 assign tlb_modified = es_store_op && addr_mapped && s1_found && s1_v && !s1_d;
@@ -356,7 +356,7 @@ assign es_tlb_refill = ds_ex ? s0_tlb_refill : (es_valid && tlb_refill);
 
 assign tlbp_bus = {es_tlbp, s1_found, s1_index};
 
-assign data_sram_req = data_sram_req_r && es_valid && !tlb_ex;
+assign data_sram_req = data_sram_req_r && es_valid;// && !tlb_ex;
 assign data_sram_wr = (|data_sram_wstrb);
 assign data_sram_size = data_size_is_two ? 2'd2 :
                         data_size_is_one ? 2'd1 :

@@ -282,7 +282,7 @@ assign s0_vpn2     = nextpc_r[31:13];
 assign s0_odd_page = nextpc_r[12];
 
 assign physical_pc = (pc_mapped && s0_found) ? {s0_pfn, nextpc_r[11:0]}
-                                             : nextpc_r;
+                                             : {3'b0, nextpc_r[28:0]};
 assign tlb_refill  = pc_mapped && !s0_found;
 assign tlb_invalid = pc_mapped && s0_found && !s0_v;
 
